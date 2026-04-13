@@ -44,7 +44,7 @@ export default function PriorityColumn({
         style={{ cursor: 'pointer' }}
         onClick={() => setCollapsed(!collapsed)}
       >
-        <div className="priority-accent-bar" style={{ backgroundColor: color }} />
+        <div className="priority-accent-bar" style={{ background: color }} />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

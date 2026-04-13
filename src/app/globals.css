@@ -382,7 +382,6 @@ button, input, select, textarea {
   width: 3px;
   height: 1.5rem;
   border-radius: 2px;
-  background: linear-gradient(to bottom, var(--color-primary), var(--color-primary-dark));
   flex-shrink: 0;
 }
 
