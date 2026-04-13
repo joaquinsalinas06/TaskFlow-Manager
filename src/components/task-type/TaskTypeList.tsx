@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X as XIcon } from 'lucide-react';
+import { GripVertical, X as XIcon, Tag } from 'lucide-react';
 
 // ==========================================
 // INDIVIDUAL SORTABLE ITEM (TASK TYPE)

@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X as XIcon, ChevronRight, ChevronDown } from 'lucide-react';
+import { GripVertical, X as XIcon, ChevronRight, ChevronDown, Folder } from 'lucide-react';
 
 // ==========================================
 // INDIVIDUAL SORTABLE ITEM (GROUP)

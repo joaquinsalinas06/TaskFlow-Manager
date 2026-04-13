@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePriorities } from '@/hooks/usePriorities';
 import { useGroups } from '@/hooks/useGroups';
@@ -23,6 +23,20 @@ export default function DashboardPage() {
   const { settings } = useUserSettings();
 
   const [view, setView] = useState<View>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen and set default collapse state
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setIsSidebarCollapsed(true);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const groupedTasks = useMemo(() => {
     const grouped: Record<string, Record<string, any[]>> = {};
@@ -69,6 +83,9 @@ export default function DashboardPage() {
         onUpdateTaskType={updateTaskType}
         activeView={view}
         onNavigate={setView}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobile={isMobile}
       />
 
       {view === 'settings' ? (
@@ -85,6 +102,9 @@ export default function DashboardPage() {
           onToggleTask={toggleTaskCompletion}
           onUpdateTask={updateTask}
           userSettings={settings}
+          sidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isMobile={isMobile}
         />
       )}
     </div>

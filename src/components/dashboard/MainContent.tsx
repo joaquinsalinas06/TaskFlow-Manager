@@ -10,7 +10,7 @@ import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
 import {
   Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail,
   ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink,
-  PlusCircle
+  PlusCircle, Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,6 +30,9 @@ interface MainContentProps {
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
   userSettings: UserSettings | null;
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
+  isMobile: boolean;
 }
 
 export default function MainContent({
@@ -43,6 +46,9 @@ export default function MainContent({
   onToggleTask,
   onUpdateTask,
   userSettings,
+  sidebarCollapsed,
+  onToggleSidebar,
+  isMobile,
 }: MainContentProps) {
   const { t } = useTranslation();
   
@@ -215,7 +221,15 @@ export default function MainContent({
 
   return (
     <>
-      <main style={{ flex: 1, overflowY: 'auto', background: 'var(--color-surface-0)', position: 'relative' }}>
+      <main style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        background: 'var(--color-surface-0)', 
+        position: 'relative',
+        marginLeft: isMobile ? 0 : (sidebarCollapsed ? '68px' : '0px'),
+        paddingLeft: isMobile ? 0 : 0, 
+        transition: 'margin-left 0.3s ease'
+      }}>
         {/* Top bar */}
         <div style={{
           position: 'sticky',
@@ -225,36 +239,49 @@ export default function MainContent({
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '2rem 2rem 1.5rem',
+          padding: isMobile ? '1rem' : '2rem 2rem 1.5rem',
           borderBottom: '1px solid var(--color-border)',
         }}>
-          <div>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.35rem' }}>
-              {t('dashboard')}
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                {priorities.length} {t('priorities').toLowerCase()}
-              </span>
-              <span style={{ color: 'var(--color-border)', fontSize: '1rem' }}>·</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                {groups.length} {t('groups').toLowerCase()}
-              </span>
-              {totalTasks > 0 && (
-                <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {isMobile && (
+              <button 
+                onClick={onToggleSidebar}
+                className="btn btn-ghost btn-icon"
+                style={{ background: 'var(--color-surface-2)' }}
+              >
+                <Menu size={20} />
+              </button>
+            )}
+            <div>
+              <h1 style={{ fontSize: isMobile ? '1.25rem' : '1.6rem', fontWeight: 800, marginBottom: '0.15rem' }}>
+                {t('dashboard')}
+              </h1>
+              {!isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    {priorities.length} {t('priorities').toLowerCase()}
+                  </span>
                   <span style={{ color: 'var(--color-border)', fontSize: '1rem' }}>·</span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                    {completedTasks}/{totalTasks} {t('tasks_done')}
+                    {groups.length} {t('groups').toLowerCase()}
                   </span>
-                </>
+                  {totalTasks > 0 && (
+                    <>
+                      <span style={{ color: 'var(--color-border)', fontSize: '1rem' }}>·</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        {completedTasks}/{totalTasks} {t('tasks_done')}
+                      </span>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
-          <button onClick={openModal} className="btn btn-primary" style={{ gap: '0.4rem' }}>
-            <Plus size={16} />
-            {t('new_task')}
+          <button onClick={openModal} className="btn btn-primary" style={{ gap: isMobile ? '0' : '0.4rem', padding: isMobile ? '0.5rem' : undefined }}>
+            <Plus size={isMobile ? 20 : 16} />
+            {!isMobile && t('new_task')}
           </button>
         </div>
 

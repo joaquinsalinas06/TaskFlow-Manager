@@ -42,7 +42,7 @@ export default function PriorityColumn({
   const color = priority.color || '#6366f1';
 
   return (
-    <div className="priority-card">
+    <div className="priority-card" id={`priority-${priority.id}`}>
       {/* Header */}
       <div
         className="priority-card-header"

@@ -65,7 +65,7 @@ export default function GroupSection({
   }, [tasks, taskTypes]);
 
   return (
-    <div style={{
+    <div className={`group-section-${group.id}`} style={{
       background: 'var(--color-surface-0)',
       border: '1px solid var(--color-border)',
       borderLeft: `2px solid ${color}`,
