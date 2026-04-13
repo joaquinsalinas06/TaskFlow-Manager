@@ -13,6 +13,7 @@ export interface Group {
   id: string;
   userId: string;
   name: string;
+  order?: number;
   color?: string;
   createdAt: Timestamp;
 }
@@ -47,7 +48,9 @@ export interface UserSettings {
   googleRefreshToken: string | null;  // Persisted refresh token for Calendar API
   googleAccessToken: string | null;   // Short-lived access token (cached)
   googleTokenExpiry: number | null;   // Epoch ms when access token expires
+  googleEmail?: string | null;        // Email returned from Google for the calendar
   timezone: string;                   // IANA tz string e.g. "America/Mexico_City"
+  language: 'en' | 'es';              // Language for notifications
   priorityFilter: string[];           // Priority IDs that trigger notifications (empty = all)
   groupFilter: string[];              // Group IDs that trigger notifications (empty = all)
   updatedAt: Timestamp;

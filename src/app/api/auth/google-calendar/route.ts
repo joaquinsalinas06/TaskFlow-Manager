@@ -31,13 +31,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine the redirect URI — must match what was used in initCodeClient
-    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const redirectUri = `${origin}/api/auth/google-calendar`;
-
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_OAUTH_CLIENT_ID,
       process.env.GOOGLE_OAUTH_CLIENT_SECRET,
-      redirectUri,
+      'postmessage', // Required for GIS 'popup' with initCodeClient
     );
 
     // Exchange the auth code for tokens
@@ -53,12 +50,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Fetch the user's Google Email associated with this token
+    oauth2Client.setCredentials(tokens);
+    const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2Client });
+    let googleEmail = null;
+    try {
+      const userInfo = await oauth2Api.userinfo.get();
+      googleEmail = userInfo.data.email || null;
+    } catch (e) {
+      console.warn('Could not fetch google userinfo', e);
+    }
+
     // Persist tokens in Firestore userSettings/{uid}
     const settingsRef = doc(db, 'userSettings', uid);
     await updateDoc(settingsRef, {
       googleRefreshToken: refresh_token,
       googleAccessToken: access_token ?? null,
       googleTokenExpiry: expiry_date ?? null,
+      googleEmail,
       calendarIntegration: true,
       updatedAt: Timestamp.now(),
     });

@@ -64,5 +64,17 @@
   "settings_saved": "Settings saved",
   "timezone_label": "Your timezone",
   "filters_section": "Notification Filters",
-  "filters_desc": "Limit notifications to specific priorities or groups. Leave empty to apply to all."
+  "filters_desc": "Limit notifications to specific priorities or groups. Leave empty to apply to all.",
+  "language_label": "Email Language",
+  "language_en": "English",
+  "language_es": "Español",
+  "delete": "Delete",
+  "delete_group_title": "Delete Group",
+  "delete_priority_title": "Delete Priority",
+  "delete_confirmation": "You are about to delete",
+  "delete_warning_tasks": "This contains the following linked tasks:",
+  "delete_warning_consequence": "Deleting this will also delete all these tasks! Are you sure?",
+  "delete_forever": "Delete Forever",
+  "and_more": "...and {{count}} more.",
+  "linked_account": "Linked Account: "
 }

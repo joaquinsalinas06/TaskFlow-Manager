@@ -10,6 +10,7 @@ interface UseUserSettingsReturn {
   loading: boolean;
   error: Error | null;
   updateSettings: (patch: Partial<Omit<UserSettings, 'uid'>>) => Promise<void>;
+  refreshSettings: () => Promise<void>;
   isCalendarConnected: boolean;
   isCalendarTokenExpired: boolean;
   disconnectCalendar: () => Promise<void>;
@@ -21,26 +22,25 @@ export function useUserSettings(): UseUserSettingsReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user?.uid) {
       setSettings(null);
       return;
     }
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await getUserSettings(user.uid, user.email ?? '');
-        setSettings(data);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
+    setLoading(true);
+    try {
+      const data = await getUserSettings(user.uid, user.email ?? '');
+      setSettings(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
   }, [user?.uid, user?.email]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updateSettings = useCallback(
     async (patch: Partial<Omit<UserSettings, 'uid'>>) => {
@@ -75,11 +75,22 @@ export function useUserSettings(): UseUserSettingsReturn {
     settings?.googleTokenExpiry && Date.now() > settings.googleTokenExpiry
   );
 
+  const refreshSettings = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      const data = await getUserSettings(user.uid, user.email ?? '');
+      setSettings(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
+  }, [user?.uid, user?.email]);
+
   return {
     settings,
     loading,
     error,
     updateSettings,
+    refreshSettings,
     isCalendarConnected,
     isCalendarTokenExpired,
     disconnectCalendar,

@@ -5,6 +5,8 @@ import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, UserSettings } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
 import CustomSelect from '@/components/shared/CustomSelect';
+import DatePicker from '@/components/shared/DatePicker';
+import { Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail } from 'lucide-react';
 
 interface MainContentProps {
   priorities: Priority[];
@@ -13,6 +15,7 @@ interface MainContentProps {
   onCreateTask: (title: string, priorityId: string, groupId: string, dueDate: string | null, sendEmailReminder: boolean | null, addToCalendar: boolean | null) => Promise<Task>;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
+  onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
   userSettings: UserSettings | null;
 }
 
@@ -23,6 +26,7 @@ export default function MainContent({
   onCreateTask,
   onDeleteTask,
   onToggleTask,
+  onUpdateTask,
   userSettings,
 }: MainContentProps) {
   const { t } = useTranslation();
@@ -91,10 +95,7 @@ export default function MainContent({
             background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', margin: '0 auto 1.25rem',
           }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                stroke="var(--color-primary-light)" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <Target size={28} color="var(--color-primary-light)" />
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{t('no_priorities_yet')}</h2>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -114,10 +115,7 @@ export default function MainContent({
             background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', margin: '0 auto 1.25rem',
           }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                stroke="var(--color-primary-light)" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <ListTodo size={28} color="var(--color-primary-light)" />
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{t('no_groups_yet')}</h2>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -168,9 +166,7 @@ export default function MainContent({
             </div>
           </div>
           <button onClick={openModal} className="btn btn-primary" style={{ gap: '0.4rem' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+            <Plus size={16} />
             {t('new_task')}
           </button>
         </div>
@@ -180,11 +176,13 @@ export default function MainContent({
           {priorities.map((priority, i) => (
             <div key={priority.id} className="animate-slideUp" style={{ animationDelay: `${i * 0.05}s` }}>
               <PriorityColumn
+                priorities={priorities}
                 priority={priority}
                 groups={groups}
                 tasks={groupedTasks[priority.id] || {}}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
+                onUpdateTask={onUpdateTask}
               />
             </div>
           ))}
@@ -198,6 +196,7 @@ export default function MainContent({
             <div className="modal-header">
               <span className="modal-title">{t('new_task')}</span>
               <button
+                type="button"
                 className="btn btn-ghost btn-icon"
                 onClick={() => setShowTaskModal(false)}
                 aria-label={t('cancel')}
@@ -236,11 +235,10 @@ export default function MainContent({
 
               <div>
                 <label className="label">{t('due_date_label')}</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={taskDueDate}
-                  onChange={(e) => setTaskDueDate(e.target.value)}
+                <DatePicker 
+                  value={taskDueDate === '' ? null : taskDueDate} 
+                  onChange={(val) => setTaskDueDate(val || '')} 
+                  placeholder={t('due_date_label')}
                 />
               </div>
 
@@ -267,10 +265,7 @@ export default function MainContent({
                         fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                       }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                      </svg>
+                      <Mail size={12} />
                       {t('send_reminder')}
                     </button>
                   )}
@@ -295,10 +290,7 @@ export default function MainContent({
                         transition: 'all 0.15s',
                       }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
+                      <CalendarIcon size={12} />
                       {t('add_to_calendar')}
                     </button>
                   )}

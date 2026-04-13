@@ -37,9 +37,7 @@ export async function GET(req: NextRequest) {
 
     for (const settingsDoc of settingsSnap.docs) {
       const settings = { ...settingsDoc.data(), uid: settingsDoc.id } as UserSettings;
-      const { uid, notificationEmail, reminderLeadHours, timezone, priorityFilter, groupFilter } = settings;
-
-      const userTz = timezone || 'UTC';
+      const { uid, notificationEmail, reminderLeadHours, timezone, language, priorityFilter, groupFilter } = settings;
 
       // ── 2. Load pending tasks for this user ──────────────────
       const tasksSnap = await getDocs(
@@ -67,13 +65,11 @@ export async function GET(req: NextRequest) {
         if (groupFilter.length > 0 && !groupFilter.includes(groupId)) continue;
 
         // ── 4. Convert dueDate to UTC using user's timezone ─────
-        // dueDate = "YYYY-MM-DD" in the user's local timezone
-        // We treat the task as due at end-of-day in their timezone
+        const userTz = timezone || 'UTC';
         const dueInUserTz = DateTime.fromISO(dueDate!, { zone: userTz }).endOf('day');
         const dueInUTC = dueInUserTz.toUTC();
 
         // ── 5. Check if we're inside the reminder window ─────────
-        // Window: [dueDate_UTC - reminderLeadHours, dueDate_UTC]
         const windowStart = dueInUTC.minus({ hours: reminderLeadHours });
 
         if (nowUTC < windowStart || nowUTC > dueInUTC) continue;
@@ -85,6 +81,7 @@ export async function GET(req: NextRequest) {
             taskTitle: title,
             dueDate: dueDate!,
             taskId,
+            language: language as 'en' | 'es',
           });
 
           if (result.success) {
@@ -107,11 +104,9 @@ export async function GET(req: NextRequest) {
       errors: errors.length > 0 ? errors : undefined,
     };
 
-    console.log('[cron/reminders]', JSON.stringify(summary));
     return NextResponse.json(summary);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[cron/reminders] Fatal error:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

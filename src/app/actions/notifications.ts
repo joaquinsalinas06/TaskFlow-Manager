@@ -7,23 +7,59 @@ interface ReminderEmailPayload {
   taskTitle: string;
   dueDate: string;       // "YYYY-MM-DD"
   taskId: string;
+  language?: 'en' | 'es';
   priorityName?: string;
   groupName?: string;
 }
 
-function buildEmailHtml(payload: ReminderEmailPayload): string {
-  const { taskTitle, dueDate, priorityName, groupName } = payload;
+const TRANSLATIONS = {
+  en: {
+    heroIcon: '⏰',
+    heroTitle: 'Task Reminder',
+    heroSubtitle: 'Your deadline is approaching',
+    bodyLabel: 'Due Task',
+    dueDateLabel: 'Due Date',
+    priorityLabel: 'Priority',
+    groupLabel: 'Group',
+    bodyText: "Don't forget to complete this task before it's due. Open your TaskFlow dashboard to mark it as done or adjust the deadline.",
+    btnText: 'Open Dashboard →',
+    footerText: 'This reminder was sent by <strong style="color:#6366f1">TaskFlow Manager</strong>.<br>You can manage your notification preferences in the app settings.',
+    subjectPrefix: '⏰ Reminder:',
+    subjectSuffix: 'is due',
+  },
+  es: {
+    heroIcon: '⏰',
+    heroTitle: 'Recordatorio de Tarea',
+    heroSubtitle: 'Tu fecha límite se acerca',
+    bodyLabel: 'Tarea Pendiente',
+    dueDateLabel: 'Fecha de Entrega',
+    priorityLabel: 'Prioridad',
+    groupLabel: 'Grupo',
+    bodyText: "No olvides completar esta tarea antes de que venza. Abre tu panel de TaskFlow para marcarla como lista o ajustar la fecha límite.",
+    btnText: 'Abrir Dashboard →',
+    footerText: 'Este recordatorio fue enviado por <strong style="color:#6366f1">TaskFlow Manager</strong>.<br>Puedes gestionar tus preferencias de notificaciones en la configuración de la app.',
+    subjectPrefix: '⏰ Recordatorio:',
+    subjectSuffix: 'vence el',
+  }
+};
 
-  const formattedDate = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+function buildEmailHtml(payload: ReminderEmailPayload): string {
+  const { taskTitle, dueDate, priorityName, groupName, language = 'en' } = payload;
+  const t = TRANSLATIONS[language];
+
+  const formattedDate = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString(
+    language === 'es' ? 'es-ES' : 'en-US',
+    {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }
+  );
 
   const metaParts: string[] = [];
-  if (priorityName) metaParts.push(`Priority: <strong>${priorityName}</strong>`);
-  if (groupName) metaParts.push(`Group: <strong>${groupName}</strong>`);
+  if (priorityName) metaParts.push(`${t.priorityLabel}: <strong>${priorityName}</strong>`);
+  if (groupName) metaParts.push(`${t.groupLabel}: <strong>${groupName}</strong>`);
   const metaHtml = metaParts.length > 0
     ? `<p style="color:#888;font-size:14px;margin:0 0 16px">${metaParts.join(' &nbsp;·&nbsp; ')}</p>`
     : '';
@@ -39,28 +75,28 @@ function buildEmailHtml(payload: ReminderEmailPayload): string {
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 36px;text-align:center">
-            <div style="font-size:28px;margin-bottom:8px">⏰</div>
-            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.3px">Task Reminder</h1>
-            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">Your deadline is approaching</p>
+            <div style="font-size:28px;margin-bottom:8px">${t.heroIcon}</div>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.3px">${t.heroTitle}</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">${t.heroSubtitle}</p>
           </td>
         </tr>
         <!-- Body -->
         <tr>
           <td style="padding:32px 36px">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;color:#6366f1;text-transform:uppercase">Due Task</p>
+            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;color:#6366f1;text-transform:uppercase">${t.bodyLabel}</p>
             <h2 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#f1f1f5;line-height:1.3">${taskTitle}</h2>
             ${metaHtml}
             <div style="background:#0f0f17;border-radius:10px;padding:16px 20px;margin-bottom:24px;border-left:3px solid #6366f1">
-              <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Due Date</p>
+              <p style="margin:0;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">${t.dueDateLabel}</p>
               <p style="margin:6px 0 0;font-size:17px;font-weight:700;color:#f1f1f5">${formattedDate}</p>
             </div>
             <p style="margin:0 0 24px;font-size:14px;color:#aaa;line-height:1.6">
-              Don't forget to complete this task before it's due. Open your TaskFlow dashboard to mark it as done or adjust the deadline.
+              ${t.bodyText}
             </p>
             <div style="text-align:center">
               <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000'}/dashboard"
                  style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.02em">
-                Open Dashboard →
+                ${t.btnText}
               </a>
             </div>
           </td>
@@ -69,8 +105,7 @@ function buildEmailHtml(payload: ReminderEmailPayload): string {
         <tr>
           <td style="padding:20px 36px;border-top:1px solid rgba(255,255,255,0.06);text-align:center">
             <p style="margin:0;font-size:12px;color:#555">
-              This reminder was sent by <strong style="color:#6366f1">TaskFlow Manager</strong>.<br>
-              You can manage your notification preferences in the app settings.
+              ${t.footerText}
             </p>
           </td>
         </tr>
@@ -101,7 +136,8 @@ function getTransporter() {
 export async function sendTaskReminderEmail(
   payload: ReminderEmailPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { to, taskTitle, dueDate } = payload;
+  const { to, taskTitle, dueDate, language = 'en' } = payload;
+  const t = TRANSLATIONS[language];
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error('[notifications] GMAIL_USER or GMAIL_APP_PASSWORD not configured');
@@ -113,7 +149,7 @@ export async function sendTaskReminderEmail(
     await transporter.sendMail({
       from: `"TaskFlow Manager" <${process.env.GMAIL_USER}>`,
       to,
-      subject: `⏰ Reminder: "${taskTitle}" is due ${dueDate}`,
+      subject: `${t.subjectPrefix} "${taskTitle}" ${t.subjectSuffix} ${dueDate}`,
       html: buildEmailHtml(payload),
     });
     return { success: true };

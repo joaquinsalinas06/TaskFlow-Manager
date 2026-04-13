@@ -3,6 +3,7 @@ import { Group } from '@/types/index';
 import {
   getGroupsByUser,
   createGroup as firestoreCreateGroup,
+  updateGroupOrder as firestoreUpdateGroupOrder,
   updateGroup as firestoreUpdateGroup,
   deleteGroup as firestoreDeleteGroup,
 } from '@/lib/firestore';
@@ -39,7 +40,7 @@ export const useGroups = (userId: string | undefined) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         const newGroup = await firestoreCreateGroup(userId, name);
-        setGroups((prev) => [newGroup, ...prev]);
+        setGroups((prev) => [...prev, newGroup].sort((a, b) => (a.order || 0) - (b.order || 0)));
         return newGroup;
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -49,7 +50,28 @@ export const useGroups = (userId: string | undefined) => {
     [userId]
   );
 
+  const updateOrderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const updateTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const updateGroupOrder = useCallback(
+    async (newGroups: Group[]) => {
+      // 1. Optimistic
+      setGroups(newGroups);
+      
+      // 2. Clear
+      if (updateOrderTimeoutRef.current) clearTimeout(updateOrderTimeoutRef.current);
+      
+      // 3. Debounce
+      updateOrderTimeoutRef.current = setTimeout(async () => {
+        try {
+          await firestoreUpdateGroupOrder(newGroups);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      }, 500);
+    },
+    []
+  );
 
   const updateGroup = useCallback(
     async (groupId: string, data: Partial<Group>) => {
@@ -93,6 +115,7 @@ export const useGroups = (userId: string | undefined) => {
     loading,
     error,
     createGroup,
+    updateGroupOrder,
     updateGroup,
     deleteGroup,
   };

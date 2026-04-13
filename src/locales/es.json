@@ -64,5 +64,17 @@
   "settings_saved": "Configuración guardada",
   "timezone_label": "Tu zona horaria",
   "filters_section": "Filtros de Notificación",
-  "filters_desc": "Limita las notificaciones a ciertas prioridades o grupos. Déjalo vacío para aplicar a todo."
+  "filters_desc": "Limita las notificaciones a ciertas prioridades o grupos. Déjalo vacío para aplicar a todo.",
+  "language_label": "Idioma de los Correos",
+  "language_en": "Inglés",
+  "language_es": "Español",
+  "delete": "Eliminar",
+  "delete_group_title": "Eliminar Grupo",
+  "delete_priority_title": "Eliminar Prioridad",
+  "delete_confirmation": "Estás a punto de eliminar",
+  "delete_warning_tasks": "Contiene las siguientes tareas vinculadas:",
+  "delete_warning_consequence": "¡Eliminar esto también eliminará todas estas tareas! ¿Estás seguro?",
+  "delete_forever": "Eliminar para Siempre",
+  "and_more": "...y {{count}} más.",
+  "linked_account": "Cuenta Vinculada: "
 }

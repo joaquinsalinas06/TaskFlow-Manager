@@ -6,7 +6,9 @@ import { useTranslation } from '@/providers/I18nProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { Priority, Group, Task } from '@/types/index';
 import PriorityList from '@/components/priority/PriorityList';
-import ColorPicker from '@/components/shared/ColorPicker';
+import GroupList from '@/components/group/GroupList';
+import ConfirmDeleteModal from '@/components/dashboard/ConfirmDeleteModal';
+import { LogOut, Settings, Sun, Moon, Plus, ChevronDown, ChevronRight, CheckSquare, X as XIcon } from 'lucide-react';
 
 interface SidebarProps {
   priorities: Priority[];
@@ -15,8 +17,10 @@ interface SidebarProps {
   onCreatePriority: (name: string) => Promise<Priority>;
   onCreateGroup: (name: string) => Promise<Group>;
   onUpdatePriorityOrder: (priorities: Priority[]) => Promise<void>;
+  onUpdateGroupOrder: (groups: Group[]) => Promise<void>;
   onDeletePriority: (id: string) => Promise<void>;
   onUpdatePriority: (id: string, data: Partial<Priority>) => Promise<void>;
+  onDeleteGroup: (id: string) => Promise<void>;
   onUpdateGroup: (id: string, data: Partial<Group>) => Promise<void>;
   activeView: 'dashboard' | 'settings';
   onNavigate: (view: 'dashboard' | 'settings') => void;
@@ -29,8 +33,10 @@ export default function Sidebar({
   onCreatePriority,
   onCreateGroup,
   onUpdatePriorityOrder,
+  onUpdateGroupOrder,
   onDeletePriority,
   onUpdatePriority,
+  onDeleteGroup,
   onUpdateGroup,
   activeView,
   onNavigate,
@@ -47,6 +53,10 @@ export default function Sidebar({
   const [groupName, setGroupName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Delete Modal State
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'group' | 'priority' } | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   const handleCreatePriority = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,18 +90,43 @@ export default function Sidebar({
     }
   };
 
-  const movePriority = (index: number, direction: 'up' | 'down') => {
-    const newPriorities = [...priorities];
-    if (direction === 'up' && index > 0) {
-      [newPriorities[index], newPriorities[index - 1]] = [newPriorities[index - 1], newPriorities[index]];
-    } else if (direction === 'down' && index < newPriorities.length - 1) {
-      [newPriorities[index], newPriorities[index + 1]] = [newPriorities[index + 1], newPriorities[index]];
-    }
-    onUpdatePriorityOrder(newPriorities);
-  };
-
   const handleLogout = async () => {
     try { await logout(); } catch (err: any) { setError(err.message || 'Failed to logout'); }
+  };
+
+  const getLinkedTasks = (id: string, type: 'group' | 'priority') => {
+    const linked: Task[] = [];
+    Object.values(groupedTasks).forEach(groupMap => {
+      Object.entries(groupMap).forEach(([groupId, tasks]) => {
+        tasks.forEach(t => {
+          if ((type === 'group' && groupId === id) || (type === 'priority' && t.priorityId === id)) {
+            linked.push(t);
+          }
+        });
+      });
+    });
+    return linked;
+  };
+
+  const confirmDelete = (id: string, name: string, type: 'group' | 'priority') => {
+    setItemToDelete({ id, name, type });
+  };
+
+  const executeDelete = async () => {
+    if (!itemToDelete) return;
+    setDeleteSaving(true);
+    try {
+      if (itemToDelete.type === 'priority') {
+        await onDeletePriority(itemToDelete.id);
+      } else {
+        await onDeleteGroup(itemToDelete.id);
+      }
+      setItemToDelete(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete');
+    } finally {
+      setDeleteSaving(false);
+    }
   };
 
   return (
@@ -141,7 +176,7 @@ export default function Sidebar({
               onClick={() => setPrioritiesCollapsed(!prioritiesCollapsed)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', transform: prioritiesCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                {prioritiesCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
                 <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('priorities')}</span>
               </div>
               <span className="badge">{priorities.length}</span>
@@ -152,9 +187,9 @@ export default function Sidebar({
                 {priorities.length > 0 ? (
                   <PriorityList
                     priorities={priorities}
-                    onMovePriority={movePriority}
-                    onDeletePriority={onDeletePriority}
-                    onUpdateColor={(id, color) => onUpdatePriority(id, { color })}
+                    onUpdatePriorityOrder={onUpdatePriorityOrder}
+                    onDeletePriority={(id) => confirmDelete(id, priorities.find(p => p.id === id)?.name || '', 'priority')}
+                    onUpdatePriority={onUpdatePriority}
                   />
                 ) : (
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
@@ -166,7 +201,7 @@ export default function Sidebar({
                   className="sidebar-add-btn"
                   onClick={() => { setShowPriorityModal(true); setPriorityName(''); setError(''); }}
                 >
-                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>+</span>
+                  <Plus size={16} />
                   {t('new_priority')}
                 </button>
               </>
@@ -180,7 +215,7 @@ export default function Sidebar({
               onClick={() => setGroupsCollapsed(!groupsCollapsed)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', transform: groupsCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                {groupsCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
                 <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('groups')}</span>
               </div>
               <span className="badge">{groups.length}</span>
@@ -189,48 +224,14 @@ export default function Sidebar({
             {!groupsCollapsed && (
               <>
                 {groups.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    {groups.map((group) => {
-                      // Gathers all uncompleted tasks for this group, sorted by their priority order
-                      const groupTasks = Object.entries(groupedTasks).flatMap(([priorityId, groupMap]) => {
-                        const prioObj = priorities.find(p => p.id === priorityId);
-                        const order = prioObj ? prioObj.order : 999;
-                        return (groupMap[group.id] || [])
-                          .filter(t => !t.completed)
-                          .map(t => ({ ...t, _prioOrder: order }));
-                      }).sort((a, b) => a._prioOrder - b._prioOrder);
-
-                      return (
-                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                          <div className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <ColorPicker
-                              color={group.color || '#6366f1'}
-                              onChange={(val) => onUpdateGroup(group.id, { color: val })}
-                              size={10}
-                            />
-                            <span style={{ flex: 1 }}>{group.name}</span>
-                          </div>
-                          
-                          {/* Task Legend */}
-                          {groupTasks.length > 0 && (
-                            <div style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.1rem', marginBottom: '0.25rem' }}>
-                              {groupTasks.map(t => (
-                                <div key={t.id} style={{
-                                  fontSize: '0.7rem',
-                                  color: 'var(--color-text-faint)',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}>
-                                  • {t.title}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <GroupList
+                    groups={groups}
+                    priorities={priorities}
+                    groupedTasks={groupedTasks}
+                    onUpdateGroupOrder={onUpdateGroupOrder}
+                    onDeleteGroup={(id) => confirmDelete(id, groups.find(g => g.id === id)?.name || '', 'group')}
+                    onUpdateGroup={onUpdateGroup}
+                  />
                 ) : (
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
                     {t('no_groups_yet')}
@@ -241,7 +242,7 @@ export default function Sidebar({
                   className="sidebar-add-btn"
                   onClick={() => { setShowGroupModal(true); setGroupName(''); setError(''); }}
                 >
-                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>+</span>
+                  <Plus size={16} />
                   {t('new_group')}
                 </button>
               </>
@@ -264,16 +265,9 @@ export default function Sidebar({
               className="btn btn-ghost"
               style={{ flex: 1, padding: '0.4rem', fontSize: '0.75rem', gap: '0.3rem' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {theme === 'dark' ? (
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                ) : (
-                  <>
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-                  </>
-                )}
-              </svg>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
+              </div>
               {theme === 'dark' ? t('light_mode') : t('dark_mode')}
             </button>
           </div>
@@ -292,10 +286,7 @@ export default function Sidebar({
               color: activeView === 'settings' ? 'var(--color-primary-light)' : 'var(--color-text-muted)',
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
+            <Settings size={15} />
             {t('settings')}
           </button>
 
@@ -304,10 +295,7 @@ export default function Sidebar({
             className="btn btn-ghost"
             style={{ width: '100%', justifyContent: 'flex-start', gap: '0.6rem', padding: '0.5rem 0.75rem' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <LogOut size={16} />
             {t('sign_out')}
           </button>
         </div>
@@ -324,9 +312,7 @@ export default function Sidebar({
                 onClick={() => setShowPriorityModal(false)}
                 aria-label={t('cancel')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                <XIcon size={16} />
               </button>
             </div>
             <form onSubmit={handleCreatePriority} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -364,9 +350,7 @@ export default function Sidebar({
                 onClick={() => setShowGroupModal(false)}
                 aria-label={t('cancel')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                <XIcon size={16} />
               </button>
             </div>
             <form onSubmit={handleCreateGroup} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -391,6 +375,17 @@ export default function Sidebar({
             </form>
           </div>
         </div>
+      )}
+      {/* ── Confirm Delete Modal ── */}
+      {itemToDelete && (
+        <ConfirmDeleteModal
+          titleKey={itemToDelete.type === 'priority' ? 'delete_priority_title' : 'delete_group_title'}
+          itemName={itemToDelete.name}
+          linkedTasks={getLinkedTasks(itemToDelete.id, itemToDelete.type)}
+          onConfirm={executeDelete}
+          onCancel={() => setItemToDelete(null)}
+          isDeleting={deleteSaving}
+        />
       )}
     </>
   );

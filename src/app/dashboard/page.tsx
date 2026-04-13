@@ -15,8 +15,8 @@ type View = 'dashboard' | 'settings';
 export default function DashboardPage() {
   const { user } = useAuth();
   const { priorities, loading: priLoad, createPriority, updatePriorityOrder, deletePriority, updatePriority } = usePriorities(user?.uid);
-  const { groups, loading: groupLoad, createGroup, deleteGroup, updateGroup } = useGroups(user?.uid);
-  const { tasks, loading: taskLoad, createTask, deleteTask, toggleTaskCompletion } = useTasks(user?.uid);
+  const { groups, loading: groupLoad, createGroup, updateGroupOrder, deleteGroup, updateGroup } = useGroups(user?.uid);
+  const { tasks, loading: taskLoad, createTask, deleteTask, toggleTaskCompletion, updateTask } = useTasks(user?.uid);
   const { settings } = useUserSettings();
 
   const [view, setView] = useState<View>('dashboard');
@@ -65,8 +65,10 @@ export default function DashboardPage() {
         onCreatePriority={createPriority}
         onCreateGroup={createGroup}
         onUpdatePriorityOrder={updatePriorityOrder}
+        onUpdateGroupOrder={updateGroupOrder}
         onDeletePriority={deletePriority}
         onUpdatePriority={updatePriority}
+        onDeleteGroup={deleteGroup}
         onUpdateGroup={updateGroup}
         activeView={view}
         onNavigate={setView}
@@ -82,6 +84,7 @@ export default function DashboardPage() {
           onCreateTask={createTask}
           onDeleteTask={deleteTask}
           onToggleTask={toggleTaskCompletion}
+          onUpdateTask={updateTask}
           userSettings={settings}
         />
       )}

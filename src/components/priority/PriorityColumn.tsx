@@ -6,19 +6,23 @@ import { Priority, Group, Task } from '@/types/index';
 import GroupSection from '@/components/group/GroupSection';
 
 interface PriorityColumnProps {
+  priorities: Priority[];
   priority: Priority;
   groups: Group[];
   tasks: Record<string, Task[]>;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
+  onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
 }
 
 export default function PriorityColumn({
+  priorities,
   priority,
   groups,
   tasks,
   onDeleteTask,
   onToggleTask,
+  onUpdateTask,
 }: PriorityColumnProps) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
@@ -28,7 +32,7 @@ export default function PriorityColumn({
   const progress = total > 0 ? Math.round((completedCount / total) * 100) : 0;
   
   const groupsWithTasks = groups.filter((g) => (tasks[g.id]?.length || 0) > 0);
-  const color = priority.color || 'var(--color-primary)';
+  const color = priority.color || '#6366f1';
 
   return (
     <div className="priority-card">
@@ -82,10 +86,12 @@ export default function PriorityColumn({
             groupsWithTasks.map((group) => (
               <GroupSection
                 key={group.id}
+                priorities={priorities}
                 group={group}
                 tasks={tasks[group.id] || []}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
+                onUpdateTask={onUpdateTask}
               />
             ))
           ) : (

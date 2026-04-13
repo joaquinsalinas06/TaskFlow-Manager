@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Task } from '@/types/index';
+import { Task, Priority } from '@/types/index';
+import { Calendar as CalendarIcon, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface TaskItemProps {
+  priorities: Priority[];
   task: Task;
   onDelete: (id: string) => Promise<void>;
   onToggle: (id: string, completed: boolean) => Promise<void>;
+  onUpdate: (id: string, data: Partial<Task>) => Promise<void>;
 }
 
-export default function TaskItem({ task, onDelete, onToggle }: TaskItemProps) {
+export default function TaskItem({ priorities, task, onDelete, onToggle, onUpdate }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -35,6 +38,23 @@ export default function TaskItem({ task, onDelete, onToggle }: TaskItemProps) {
       setIsToggling(false);
     }
   };
+
+  const changePriority = async (direction: 'up' | 'down') => {
+    const currentIndex = priorities.findIndex(p => p.id === task.priorityId);
+    if (currentIndex === -1) return;
+    
+    let newIndex = currentIndex;
+    if (direction === 'up' && currentIndex > 0) newIndex--;
+    if (direction === 'down' && currentIndex < priorities.length - 1) newIndex++;
+    
+    if (newIndex !== currentIndex) {
+      await onUpdate(task.id, { priorityId: priorities[newIndex].id });
+    }
+  };
+
+  const currentPriorityIndex = priorities.findIndex(p => p.id === task.priorityId);
+  const canMoveUp = currentPriorityIndex > 0;
+  const canMoveDown = currentPriorityIndex < priorities.length - 1;
 
   return (
     <div
@@ -86,43 +106,87 @@ export default function TaskItem({ task, onDelete, onToggle }: TaskItemProps) {
             textTransform: 'uppercase',
             letterSpacing: '0.02em'
           }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <CalendarIcon size={10} />
             {task.dueDate}
           </div>
         )}
       </div>
 
-      {/* Delete button */}
-      <button
-        onClick={handleDelete}
-        disabled={isDeleting}
-        aria-label={`Delete: ${task.title}`}
+      {/* Actions container */}
+      <div 
         style={{
-          padding: '0.3rem',
-          borderRadius: 'var(--radius-sm)',
-          border: 'none',
-          background: 'none',
-          color: 'var(--color-text-faint)',
-          cursor: 'pointer',
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.15s, color 0.15s',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: '0.2rem',
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.15s',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
-        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+        {/* Move up priority */}
+        <button
+          onClick={() => changePriority('up')}
+          disabled={!canMoveUp}
+          title="Move to higher priority"
+          style={{
+            padding: '0.2rem',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'none',
+            color: canMoveUp ? 'var(--color-text-faint)' : 'transparent',
+            cursor: canMoveUp ? 'pointer' : 'default',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={(e) => { if (canMoveUp) e.currentTarget.style.color = 'var(--color-primary-light)' }}
+          onMouseLeave={(e) => { if (canMoveUp) e.currentTarget.style.color = 'var(--color-text-faint)' }}
+        >
+          {canMoveUp && <ChevronUp size={14} />}
+        </button>
+
+        {/* Move down priority */}
+        <button
+          onClick={() => changePriority('down')}
+          disabled={!canMoveDown}
+          title="Move to lower priority"
+          style={{
+            padding: '0.2rem',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'none',
+            color: canMoveDown ? 'var(--color-text-faint)' : 'transparent',
+            cursor: canMoveDown ? 'pointer' : 'default',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={(e) => { if (canMoveDown) e.currentTarget.style.color = 'var(--color-primary-light)' }}
+          onMouseLeave={(e) => { if (canMoveDown) e.currentTarget.style.color = 'var(--color-text-faint)' }}
+        >
+          {canMoveDown && <ChevronDown size={14} />}
+        </button>
+
+        <div style={{ width: '1px', height: '12px', background: 'var(--color-border)', margin: '0 0.1rem' }} />
+
+        {/* Delete button */}
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          aria-label={`Delete: ${task.title}`}
+          style={{
+            padding: '0.3rem',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'none',
+            color: 'var(--color-text-faint)',
+            cursor: 'pointer',
+            transition: 'color 0.15s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
     </div>
   );
 }

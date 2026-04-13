@@ -104,7 +104,9 @@ const DEFAULT_SETTINGS = (uid: string, email: string): Omit<UserSettings, 'updat
   googleRefreshToken: null,
   googleAccessToken: null,
   googleTokenExpiry: null,
+  googleEmail: null,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  language: typeof window !== 'undefined' && navigator.language.startsWith('es') ? 'es' : 'en',
   priorityFilter: [],
   groupFilter: [],
 });
@@ -142,18 +144,20 @@ export const updateUserSettings = async (
 // ============================================================
 
 export const getGroupsByUser = async (userId: string): Promise<Group[]> => {
-  // No orderBy — sort client-side by createdAt descending
+  // No orderBy — sort client-side by order, fallback to createdAt descending
   const q = query(
     collection(db, 'groups'),
     where('userId', '==', userId)
   );
   const snapshot = await getDocs(q);
   const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Group[];
-  // Most recently created first
   return docs.sort((a, b) => {
+    if (a.order !== undefined && b.order !== undefined) {
+      return a.order - b.order;
+    }
     const aMs = a.createdAt?.toMillis?.() ?? 0;
     const bMs = b.createdAt?.toMillis?.() ?? 0;
-    return bMs - aMs;
+    return aMs - bMs; // Older groups at top if missing order
   });
 };
 
@@ -161,12 +165,18 @@ export const createGroup = async (
   userId: string,
   name: string
 ): Promise<Group> => {
+  const groups = await getGroupsByUser(userId);
+  const maxOrder = groups.length > 0 
+    ? Math.max(...groups.map((g) => g.order || 0))
+    : -1;
+
   const color = getRandomColor();
   const docRef = doc(collection(db, 'groups'));
   
   const groupData = {
     userId,
     name,
+    order: maxOrder + 1,
     color,
     createdAt: Timestamp.now(),
   };
@@ -186,8 +196,27 @@ export const updateGroup = async (
   await updateDoc(doc(db, 'groups', groupId), data);
 };
 
+export const updateGroupOrder = async (
+  groups: Group[]
+): Promise<void> => {
+  const batch = writeBatch(db);
+  groups.forEach((group, index) => {
+    const docRef = doc(db, 'groups', group.id);
+    batch.update(docRef, { order: index });
+  });
+  await batch.commit();
+};
+
 export const deleteGroup = async (groupId: string): Promise<void> => {
   await deleteDoc(doc(db, 'groups', groupId));
+
+  // Also delete all tasks that belonged to this group
+  const tasksQ = query(
+    collection(db, 'tasks'),
+    where('groupId', '==', groupId)
+  );
+  const snapshot = await getDocs(tasksQ);
+  snapshot.docs.forEach((d) => deleteDoc(d.ref));
 };
 
 // ============================================================

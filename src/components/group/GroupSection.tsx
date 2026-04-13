@@ -2,21 +2,25 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Group, Task } from '@/types/index';
+import { Priority, Group, Task } from '@/types/index';
 import TaskItem from '@/components/task/TaskItem';
 
 interface GroupSectionProps {
+  priorities: Priority[];
   group: Group;
   tasks: Task[];
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
+  onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
 }
 
 export default function GroupSection({
+  priorities,
   group,
   tasks,
   onDeleteTask,
   onToggleTask,
+  onUpdateTask,
 }: GroupSectionProps) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
@@ -61,9 +65,11 @@ export default function GroupSection({
             {tasks.map((task) => (
               <TaskItem
                 key={task.id}
+                priorities={priorities}
                 task={task}
                 onDelete={onDeleteTask}
                 onToggle={onToggleTask}
+                onUpdate={onUpdateTask}
               />
             ))}
           </div>

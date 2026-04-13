@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { Priority, Group } from '@/types/index';
+import CustomSelect from '@/components/shared/CustomSelect';
+import { Mail, Calendar as CalendarIcon, Settings as SettingsIcon, Filter, Check, Save, Target, ChevronLeft, Globe } from 'lucide-react';
 
 interface SettingsPageClientProps {
   priorities: Priority[];
@@ -12,13 +14,18 @@ interface SettingsPageClientProps {
 }
 
 const LEAD_HOUR_OPTIONS = [
-  { value: 1,  labelKey: 'reminder_lead_1h' },
-  { value: 3,  labelKey: 'reminder_lead_3h' },
-  { value: 6,  labelKey: 'reminder_lead_6h' },
-  { value: 12, labelKey: 'reminder_lead_12h' },
-  { value: 24, labelKey: 'reminder_lead_24h' },
-  { value: 48, labelKey: 'reminder_lead_48h' },
-  { value: 72, labelKey: 'reminder_lead_72h' },
+  { value: '1',  labelKey: 'reminder_lead_1h' },
+  { value: '3',  labelKey: 'reminder_lead_3h' },
+  { value: '6',  labelKey: 'reminder_lead_6h' },
+  { value: '12', labelKey: 'reminder_lead_12h' },
+  { value: '24', labelKey: 'reminder_lead_24h' },
+  { value: '48', labelKey: 'reminder_lead_48h' },
+  { value: '72', labelKey: 'reminder_lead_72h' },
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', labelKey: 'language_en' },
+  { value: 'es', labelKey: 'language_es' },
 ];
 
 // ─── Small reusable Toggle ───────────────────────────────────────────────────
@@ -63,7 +70,6 @@ function SectionCard({ children }: { children: React.ReactNode }) {
       background: 'var(--color-surface-1)',
       borderRadius: 'var(--radius-xl)',
       border: '1px solid var(--color-border)',
-      overflow: 'hidden',
     }}>
       {children}
     </div>
@@ -125,10 +131,11 @@ function FilterPills({
 export default function SettingsPageClient({ priorities, groups }: SettingsPageClientProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const {
+    const {
     settings,
     loading,
     updateSettings,
+    refreshSettings,
     isCalendarConnected,
     disconnectCalendar,
   } = useUserSettings();
@@ -136,7 +143,8 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
   // Local draft state — only persist to Firestore on Save
   const [email, setEmail] = useState('');
   const [emailReminders, setEmailReminders] = useState(false);
-  const [leadHours, setLeadHours] = useState(24);
+  const [leadHours, setLeadHours] = useState('24');
+  const [language, setLanguage] = useState<'en' | 'es'>('en');
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [groupFilter, setGroupFilter] = useState<string[]>([]);
   const [calendarAuto, setCalendarAuto] = useState(false);
@@ -144,13 +152,16 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
   const [calendarError, setCalendarError] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const initialSyncDone = useRef(false);
 
   // Sync local draft from settings when loaded
   useEffect(() => {
-    if (!settings) return;
+    if (!settings || initialSyncDone.current) return;
+    initialSyncDone.current = true;
     setEmail(settings.notificationEmail);
     setEmailReminders(settings.emailReminders);
-    setLeadHours(settings.reminderLeadHours);
+    setLeadHours(String(settings.reminderLeadHours));
+    setLanguage(settings.language || 'en');
     setPriorityFilter(settings.priorityFilter);
     setGroupFilter(settings.groupFilter);
     setCalendarAuto(settings.calendarIntegration);
@@ -161,7 +172,8 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
     await updateSettings({
       notificationEmail: email,
       emailReminders,
-      reminderLeadHours: leadHours,
+      reminderLeadHours: Number(leadHours),
+      language,
       priorityFilter,
       groupFilter,
       calendarIntegration: isCalendarConnected ? calendarAuto : false,
@@ -210,7 +222,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
               throw new Error(data.error ?? 'Unknown error');
             }
             // Refresh settings
-            await updateSettings({ calendarIntegration: true });
+            await refreshSettings();
             setCalendarAuto(true);
           } catch (err) {
             setCalendarError(err instanceof Error ? err.message : t('calendar_connect_error'));
@@ -264,13 +276,24 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
         padding: '2rem 2rem 1.5rem',
         borderBottom: '1px solid var(--color-border)',
       }}>
-        <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            ⚙️ {t('settings_title')}
-          </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
-            {t('settings_subtitle')}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <button 
+            className="btn btn-ghost btn-icon" 
+            onClick={() => document.getElementById('sidebar-settings-btn')?.click()}
+            aria-label="Back"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div style={{ borderLeft: '1px solid var(--color-border)', height: '40px' }} />
+          <div>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.25rem' }}>
+              <SettingsIcon size={24} color="var(--color-primary)" />
+              {t('settings_title')}
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+              {t('settings_subtitle')}
+            </p>
+          </div>
         </div>
         <button
           id="settings-save-btn"
@@ -286,26 +309,41 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
             </span>
           ) : saved ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <Check size={14} />
               {t('settings_saved')}
             </span>
-          ) : t('save')}
+          ) : (
+            <>
+              <Save size={16} />
+              {t('save')}
+            </>
+          )}
         </button>
       </div>
 
       {/* Content */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-        {/* ── Email Notifications ─────────────────────────────────── */}
-        <SectionCard>
-          <div style={sectionHeaderStyle}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>📧</span>
-                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('notifications_section')}</h2>
+      <div style={{ 
+        maxWidth: '1000px', 
+        margin: '0 auto', 
+        padding: '2rem', 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: '1.5rem',
+        alignItems: 'flex-start'
+      }}>
+        
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* ── Email Notifications ─────────────────────────────────── */}
+          <SectionCard>
+            <div style={sectionHeaderStyle}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                  <Mail size={18} color="var(--color-primary)" />
+                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('notifications_section')}</h2>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{t('notifications_desc')}</p>
               </div>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{t('notifications_desc')}</p>
-            </div>
             <Toggle id="toggle-email-reminders" checked={emailReminders} onChange={setEmailReminders} />
           </div>
 
@@ -326,18 +364,12 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
 
               {/* Lead hours */}
               <div>
-                <label htmlFor="reminder-lead" style={labelStyle}>{t('reminder_lead_label')}</label>
-                <select
-                  id="reminder-lead"
-                  className="input"
+                <CustomSelect
+                  label={t('reminder_lead_label')}
                   value={leadHours}
-                  onChange={(e) => setLeadHours(Number(e.target.value))}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {LEAD_HOUR_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
-                  ))}
-                </select>
+                  onChange={setLeadHours}
+                  options={LEAD_HOUR_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+                />
               </div>
             </div>
           )}
@@ -349,7 +381,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
             <div style={sectionHeaderStyle}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '1.1rem' }}>🎯</span>
+                  <Filter size={18} color="var(--color-primary)" />
                   <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('filters_section')}</h2>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{t('filters_desc')}</p>
@@ -378,16 +410,44 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
           </SectionCard>
         )}
 
-        {/* ── Google Calendar ─────────────────────────────────────── */}
-        <SectionCard>
-          <div style={sectionHeaderStyle}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>📅</span>
-                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('calendar_section')}</h2>
+          {/* ── Language ────────────────────────────────────────────── */}
+          {emailReminders && (
+            <SectionCard>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                    <Globe size={18} color="var(--color-primary)" />
+                    <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('language_label')}</h2>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                    Language used in email notifications
+                  </p>
+                </div>
               </div>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{t('calendar_desc')}</p>
-            </div>
+              <div style={sectionBodyStyle}>
+                <CustomSelect
+                  value={language}
+                  onChange={(val) => setLanguage(val as 'en' | 'es')}
+                  options={LANGUAGE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+                />
+              </div>
+            </SectionCard>
+          )}
+        </div>
+
+        {/* ── RIGHT COLUMN ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* ── Google Calendar ─────────────────────────────────────── */}
+          <SectionCard>
+            <div style={sectionHeaderStyle}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                  <CalendarIcon size={18} color="var(--color-primary)" />
+                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{t('calendar_section')}</h2>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{t('calendar_desc')}</p>
+              </div>
             {/* Connection status badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
               <span style={{
@@ -426,6 +486,11 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
               </button>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {settings?.googleEmail && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-base)', background: 'var(--color-surface-2)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('linked_account')}</span> <strong>{settings.googleEmail}</strong>
+                  </div>
+                )}
                 {/* Auto-create toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <label htmlFor="toggle-calendar-auto" style={{ fontSize: '0.875rem', color: 'var(--color-text-base)', cursor: 'pointer' }}>
@@ -446,6 +511,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
             )}
           </div>
         </SectionCard>
+        </div>
       </div>
     </main>
   );
