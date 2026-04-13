@@ -2,29 +2,33 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Priority, Group, Task, UserSettings } from '@/types/index';
+import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 import GroupSection from '@/components/group/GroupSection';
 
 interface PriorityColumnProps {
   priorities: Priority[];
   priority: Priority;
   groups: Group[];
+  taskTypes: TaskType[];
   tasks: Record<string, Task[]>;
   userSettings: UserSettings | null;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
+  onCreateTaskType: (name: string) => Promise<TaskType>;
 }
 
 export default function PriorityColumn({
   priorities,
   priority,
   groups,
+  taskTypes,
   tasks,
   userSettings,
   onDeleteTask,
   onToggleTask,
   onUpdateTask,
+  onCreateTaskType,
 }: PriorityColumnProps) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
@@ -90,12 +94,14 @@ export default function PriorityColumn({
                 key={group.id}
                 priorities={priorities}
                 groups={groups}
+                taskTypes={taskTypes}
                 userSettings={userSettings}
                 group={group}
                 tasks={tasks[group.id] || []}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
                 onUpdateTask={onUpdateTask}
+                onCreateTaskType={onCreateTaskType}
               />
             ))
           ) : (

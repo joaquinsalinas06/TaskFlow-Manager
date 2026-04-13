@@ -2,24 +2,29 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Priority, Group, Task, UserSettings, ChecklistItem } from '@/types/index';
+import { Priority, Group, Task, TaskType, UserSettings, ChecklistItem } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
 import CustomSelect from '@/components/shared/CustomSelect';
 import DatePicker from '@/components/shared/DatePicker';
+import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
 import {
   Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail,
-  ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink
+  ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink,
+  PlusCircle
 } from 'lucide-react';
 
 interface MainContentProps {
   priorities: Priority[];
   groups: Group[];
+  taskTypes: TaskType[];
   groupedTasks: Record<string, Record<string, Task[]>>;
   onCreateTask: (
-    title: string, priorityId: string, groupId: string, dueDate: string | null, 
-    sendEmailReminder: boolean | null, addToCalendar: boolean | null, description?: string | null,
-    links?: string[], checklistItems?: ChecklistItem[], priorityName?: string, groupName?: string
+    title: string, priorityId: string, groupId: string, 
+    dueDate: string | null, sendEmailReminder: boolean | null, addCalendar: boolean | null,
+    description?: string | null, links?: string[], checklistItems?: ChecklistItem[], 
+    priorityName?: string, groupName?: string, typeId?: string | null, typeName?: string
   ) => Promise<Task>;
+  onCreateTaskType: (name: string) => Promise<TaskType>;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
@@ -29,8 +34,10 @@ interface MainContentProps {
 export default function MainContent({
   priorities,
   groups,
+  taskTypes,
   groupedTasks,
   onCreateTask,
+  onCreateTaskType,
   onDeleteTask,
   onToggleTask,
   onUpdateTask,
@@ -44,6 +51,8 @@ export default function MainContent({
   const [taskDueDate, setTaskDueDate] = useState('');
   const [taskPriorityId, setTaskPriorityId] = useState(priorities[0]?.id || '');
   const [taskGroupId, setTaskGroupId] = useState(groups[0]?.id || '');
+  const [taskTypeId, setTaskTypeId] = useState<string | null>(null);
+  const [showTypeCreateModal, setShowTypeCreateModal] = useState(false);
   const [taskSendEmail, setTaskSendEmail] = useState<boolean | null>(null);
   const [taskAddCalendar, setTaskAddCalendar] = useState<boolean | null>(null);
   
@@ -70,6 +79,7 @@ export default function MainContent({
     setTaskTitle('');
     setTaskPriorityId(priorities[0]?.id || '');
     setTaskGroupId(groups[0]?.id || '');
+    setTaskTypeId(null);
     setTaskDueDate('');
     setTaskDescription('');
     setTaskLinks([]);
@@ -94,6 +104,7 @@ export default function MainContent({
     try {
       const _priority = priorities.find(p => p.id === taskPriorityId);
       const _group = groups.find(g => g.id === taskGroupId);
+      const _type = taskTypes.find(t => t.id === taskTypeId);
       
       const created = await onCreateTask(
         taskTitle.trim(),
@@ -106,7 +117,9 @@ export default function MainContent({
         taskLinks.length > 0 ? taskLinks : undefined,
         taskChecklistItems.length > 0 ? taskChecklistItems : undefined,
         _priority?.name,
-        _group?.name
+        _group?.name,
+        taskTypeId,
+        _type?.name
       );
 
       setShowTaskModal(false);
@@ -252,15 +265,24 @@ export default function MainContent({
                 priorities={priorities}
                 priority={priority}
                 groups={groups}
+                taskTypes={taskTypes}
                 tasks={groupedTasks[priority.id] || {}}
                 userSettings={userSettings}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
                 onUpdateTask={onUpdateTask}
+                onCreateTaskType={onCreateTaskType}
               />
             </div>
           ))}
         </div>
+        
+        <CreateTaskTypeModal
+          isOpen={showTypeCreateModal}
+          onClose={() => setShowTypeCreateModal(false)}
+          onCreate={onCreateTaskType}
+          onSuccess={(type) => setTaskTypeId(type.id)}
+        />
       </main>
 
       {/* ── New Task Modal ── */}
@@ -273,7 +295,7 @@ export default function MainContent({
             flexDirection: 'column',
             padding: 0
           }}>
-            <div className="modal-header" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+            <div className="modal-header" style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid var(--color-border)', flexShrink: 0, marginBottom: 0 }}>
               <span className="modal-title">{t('new_task')}</span>
               <button
                 type="button"
@@ -285,7 +307,7 @@ export default function MainContent({
               </button>
             </div>
 
-            <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+            <div style={{ padding: taskTypes.length > 0 ? '0.5rem 1.5rem 1.5rem' : '1rem 1.5rem 1.5rem', flex: 1, overflowY: 'auto' }}>
               {error && (
                 <div style={{
                   marginBottom: '1rem',
@@ -300,7 +322,79 @@ export default function MainContent({
                 </div>
               )}
 
-              <form id="create-task-form" onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              <form id="create-task-form" onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Task Type Tags (At the top) */}
+                {taskTypes.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTaskTypeId(null)}
+                      style={{
+                        padding: '0.3rem 0.75rem',
+                        borderRadius: '999px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        border: `1.5px solid ${taskTypeId === null ? 'var(--color-primary-light)' : 'var(--color-border)'}`,
+                        background: taskTypeId === null ? 'rgba(99,102,241,0.1)' : 'transparent',
+                        color: taskTypeId === null ? 'var(--color-primary-light)' : 'var(--color-text-muted)',
+                      }}
+                    >
+                      {t('no_type')}
+                    </button>
+                    {taskTypes.map((type) => (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => setTaskTypeId(type.id)}
+                        style={{
+                          padding: '0.3rem 0.75rem',
+                          borderRadius: '999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          border: `1.5px solid ${taskTypeId === type.id ? (type.color || 'var(--color-primary-light)') : 'var(--color-border)'}`,
+                          background: taskTypeId === type.id ? `${type.color || 'var(--color-primary-light)'}15` : 'transparent',
+                          color: taskTypeId === type.id ? (type.color || 'var(--color-primary-light)') : 'var(--color-text-muted)',
+                        }}
+                      >
+                        {type.name}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowTypeCreateModal(true)}
+                      title={t('new_task_type')}
+                      style={{
+                        padding: '0.3rem 0.5rem',
+                        borderRadius: '999px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        border: '1.5px dashed var(--color-border)',
+                        background: 'transparent',
+                        color: 'var(--color-text-faint)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                        e.currentTarget.style.color = 'var(--color-primary-light)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--color-border)';
+                        e.currentTarget.style.color = 'var(--color-text-faint)';
+                      }}
+                    >
+                      <PlusCircle size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="label">{t('task_title_label')}</label>
                   <input

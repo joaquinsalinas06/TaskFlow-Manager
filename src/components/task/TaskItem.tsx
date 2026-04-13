@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, Priority, Group, UserSettings } from '@/types/index';
-import { Calendar as CalendarIcon, Trash2, FileText, Link as LinkIcon, CheckSquare } from 'lucide-react';
+import { Task, Priority, Group, TaskType, UserSettings } from '@/types/index';
+import { Calendar as CalendarIcon, Trash2, FileText, Link as LinkIcon, CheckSquare, Tag } from 'lucide-react';
 import TaskDetailModal from '@/components/task/TaskDetailModal';
 
 interface TaskItemProps {
   priorities: Priority[];
   groups: Group[];
+  taskTypes: TaskType[];
   userSettings: UserSettings | null;
   task: Task;
   onDelete: (id: string) => Promise<void>;
   onToggle: (id: string, completed: boolean) => Promise<void>;
   onUpdate: (id: string, data: Partial<Task>) => Promise<void>;
+  onCreateTaskType: (name: string) => Promise<TaskType>;
 }
 
-export default function TaskItem({ priorities, groups, userSettings, task, onDelete, onToggle, onUpdate }: TaskItemProps) {
+export default function TaskItem({ priorities, groups, taskTypes, userSettings, task, onDelete, onToggle, onUpdate, onCreateTaskType }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -47,6 +49,8 @@ export default function TaskItem({ priorities, groups, userSettings, task, onDel
   const hasChecklist = (task.checklistItems?.length ?? 0) > 0;
   const checklistDone = task.checklistItems?.filter((c) => c.done).length ?? 0;
   const checklistTotal = task.checklistItems?.length ?? 0;
+
+  const currentType = task.typeId ? taskTypes.find(t => t.id === task.typeId) : null;
 
   return (
     <>
@@ -108,6 +112,25 @@ export default function TaskItem({ priorities, groups, userSettings, task, onDel
               }}>
                 <CalendarIcon size={10} />
                 {task.dueDate}
+              </div>
+            )}
+
+            {currentType && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                fontSize: '0.65rem',
+                color: currentType.color || 'var(--color-primary-light)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                background: `${currentType.color || 'var(--color-primary-light)'}15`,
+                padding: '0.1rem 0.4rem',
+                borderRadius: '4px',
+              }}>
+                <Tag size={9} />
+                {currentType.name}
               </div>
             )}
 
@@ -179,7 +202,9 @@ export default function TaskItem({ priorities, groups, userSettings, task, onDel
           task={task}
           priorities={priorities}
           groups={groups}
+          taskTypes={taskTypes}
           userSettings={userSettings}
+          onCreateTaskType={onCreateTaskType}
           onClose={() => setShowDetail(false)}
           onUpdate={onUpdate}
           onDelete={onDelete}

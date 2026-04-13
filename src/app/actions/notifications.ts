@@ -10,6 +10,7 @@ interface ReminderEmailPayload {
   language?: 'en' | 'es';
   priorityName?: string;
   groupName?: string;
+  taskTypeName?: string;
 }
 
 const TRANSLATIONS = {
@@ -21,6 +22,7 @@ const TRANSLATIONS = {
     dueDateLabel: 'Due Date',
     priorityLabel: 'Priority',
     groupLabel: 'Group',
+    typeLabel: 'Type',
     bodyText: "Don't forget to complete this task before it's due. Open your TaskFlow dashboard to mark it as done or adjust the deadline.",
     btnText: 'Open Dashboard →',
     footerText: 'This reminder was sent by <strong style="color:#6366f1">TaskFlow Manager</strong>.<br>You can manage your notification preferences in the app settings.',
@@ -35,6 +37,7 @@ const TRANSLATIONS = {
     dueDateLabel: 'Fecha de Entrega',
     priorityLabel: 'Prioridad',
     groupLabel: 'Grupo',
+    typeLabel: 'Tipo',
     bodyText: "No olvides completar esta tarea antes de que venza. Abre tu panel de TaskFlow para marcarla como lista o ajustar la fecha límite.",
     btnText: 'Abrir Dashboard →',
     footerText: 'Este recordatorio fue enviado por <strong style="color:#6366f1">TaskFlow Manager</strong>.<br>Puedes gestionar tus preferencias de notificaciones en la configuración de la app.',
@@ -44,7 +47,7 @@ const TRANSLATIONS = {
 };
 
 function buildEmailHtml(payload: ReminderEmailPayload): string {
-  const { taskTitle, dueDate, priorityName, groupName, language = 'en' } = payload;
+  const { taskTitle, dueDate, priorityName, groupName, taskTypeName, language = 'en' } = payload;
   const t = TRANSLATIONS[language];
 
   const formattedDate = new Date(`${dueDate}T12:00:00Z`).toLocaleDateString(
@@ -60,6 +63,7 @@ function buildEmailHtml(payload: ReminderEmailPayload): string {
   const metaParts: string[] = [];
   if (priorityName) metaParts.push(`${t.priorityLabel}: <strong>${priorityName}</strong>`);
   if (groupName) metaParts.push(`${t.groupLabel}: <strong>${groupName}</strong>`);
+  if (taskTypeName) metaParts.push(`${t.typeLabel}: <strong>${taskTypeName}</strong>`);
   const metaHtml = metaParts.length > 0
     ? `<p style="color:#888;font-size:14px;margin:0 0 16px">${metaParts.join(' &nbsp;·&nbsp; ')}</p>`
     : '';
@@ -136,7 +140,7 @@ function getTransporter() {
 export async function sendTaskReminderEmail(
   payload: ReminderEmailPayload
 ): Promise<{ success: boolean; error?: string }> {
-  const { to, taskTitle, dueDate, language = 'en' } = payload;
+  const { to, taskTitle, dueDate, taskTypeName, language = 'en' } = payload;
   const t = TRANSLATIONS[language];
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -149,7 +153,7 @@ export async function sendTaskReminderEmail(
     await transporter.sendMail({
       from: `"TaskFlow Manager" <${process.env.GMAIL_USER}>`,
       to,
-      subject: `${t.subjectPrefix} "${taskTitle}" ${t.subjectSuffix} ${dueDate}`,
+      subject: `${t.subjectPrefix} ${taskTypeName ? `[${taskTypeName}] ` : ''}"${taskTitle}" ${t.subjectSuffix} ${dueDate}`,
       html: buildEmailHtml(payload),
     });
     return { success: true };

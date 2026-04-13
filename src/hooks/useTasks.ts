@@ -50,12 +50,14 @@ export const useTasks = (userId: string | undefined) => {
       links: string[] = [],
       checklistItems: ChecklistItem[] = [],
       priorityName?: string,
-      groupName?: string
+      groupName?: string,
+      typeId: string | null = null,
+      typeName?: string
     ) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         const newTask = await firestoreCreateTask(
-          userId, title, priorityId, groupId, dueDate, sendEmailReminder, addToCalendar, description, links, checklistItems
+          userId, title, priorityId, groupId, typeId, dueDate, sendEmailReminder, addToCalendar, description, links, checklistItems
         );
         setTasks((prev) => [newTask, ...prev]);
 
@@ -79,7 +81,8 @@ export const useTasks = (userId: string | undefined) => {
               priorityName,
               groupName,
               links,
-              checklistItems
+              checklistItems,
+              typeName
             ).then(async (result) => {
               if (result.success && result.eventId) {
                 // Save the calendar event ID back to the task

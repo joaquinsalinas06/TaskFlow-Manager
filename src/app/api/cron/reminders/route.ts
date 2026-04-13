@@ -39,6 +39,16 @@ export async function GET(req: NextRequest) {
       const settings = { ...settingsDoc.data(), uid: settingsDoc.id } as UserSettings;
       const { uid, notificationEmail, reminderLeadDays, timezone, language, priorityFilter, groupFilter } = settings;
 
+      // ── 1.1 Load Categories for enrichment ─────────────
+      const [priSnap, grpSnap, typSnap] = await Promise.all([
+        getDocs(query(collection(db, 'priorities'), where('userId', '==', uid))),
+        getDocs(query(collection(db, 'groups'), where('userId', '==', uid))),
+        getDocs(query(collection(db, 'taskTypes'), where('userId', '==', uid))),
+      ]);
+      const priMap = Object.fromEntries(priSnap.docs.map(d => [d.id, d.data().name]));
+      const grpMap = Object.fromEntries(grpSnap.docs.map(d => [d.id, d.data().name]));
+      const typMap = Object.fromEntries(typSnap.docs.map(d => [d.id, d.data().name]));
+
       // ── 2. Load pending tasks for this user ──────────────────
       const tasksSnap = await getDocs(
         query(
@@ -55,7 +65,7 @@ export async function GET(req: NextRequest) {
 
       for (const task of pendingTasks) {
         tasksChecked++;
-        const { id: taskId, title, dueDate, priorityId, groupId, sendEmailReminder } = task;
+        const { id: taskId, title, dueDate, priorityId, groupId, typeId, sendEmailReminder } = task;
 
         // Skip if per-task flag explicitly set to false
         if (sendEmailReminder === false) continue;
@@ -84,6 +94,9 @@ export async function GET(req: NextRequest) {
             dueDate: dueDate!,
             taskId,
             language: language as 'en' | 'es',
+            priorityName: priMap[priorityId],
+            groupName: grpMap[groupId],
+            taskTypeName: typeId ? typMap[typeId] : undefined,
           });
 
           if (result.success) {

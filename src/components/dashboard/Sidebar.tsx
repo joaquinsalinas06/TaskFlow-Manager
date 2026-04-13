@@ -4,24 +4,31 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/providers/I18nProvider';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Priority, Group, Task } from '@/types/index';
+import { Priority, Group, Task, TaskType } from '@/types/index';
 import PriorityList from '@/components/priority/PriorityList';
 import GroupList from '@/components/group/GroupList';
+import TaskTypeList from '@/components/task-type/TaskTypeList';
 import ConfirmDeleteModal from '@/components/dashboard/ConfirmDeleteModal';
-import { LogOut, Settings, Sun, Moon, Plus, ChevronDown, ChevronRight, CheckSquare, X as XIcon } from 'lucide-react';
+import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
+import { LogOut, Settings, Sun, Moon, Plus, ChevronDown, ChevronRight, CheckSquare, X as XIcon, Tag } from 'lucide-react';
 
 interface SidebarProps {
   priorities: Priority[];
   groups: Group[];
+  taskTypes: TaskType[];
   groupedTasks: Record<string, Record<string, Task[]>>;
   onCreatePriority: (name: string) => Promise<Priority>;
   onCreateGroup: (name: string) => Promise<Group>;
+  onCreateTaskType: (name: string) => Promise<TaskType>;
   onUpdatePriorityOrder: (priorities: Priority[]) => Promise<void>;
   onUpdateGroupOrder: (groups: Group[]) => Promise<void>;
+  onUpdateTaskTypeOrder: (types: TaskType[]) => Promise<void>;
   onDeletePriority: (id: string) => Promise<void>;
   onUpdatePriority: (id: string, data: Partial<Priority>) => Promise<void>;
   onDeleteGroup: (id: string) => Promise<void>;
   onUpdateGroup: (id: string, data: Partial<Group>) => Promise<void>;
+  onDeleteTaskType: (id: string) => Promise<void>;
+  onUpdateTaskType: (id: string, data: Partial<TaskType>) => Promise<void>;
   activeView: 'dashboard' | 'settings';
   onNavigate: (view: 'dashboard' | 'settings') => void;
 }
@@ -29,15 +36,20 @@ interface SidebarProps {
 export default function Sidebar({
   priorities,
   groups,
+  taskTypes,
   groupedTasks,
   onCreatePriority,
   onCreateGroup,
+  onCreateTaskType,
   onUpdatePriorityOrder,
   onUpdateGroupOrder,
+  onUpdateTaskTypeOrder,
   onDeletePriority,
   onUpdatePriority,
   onDeleteGroup,
   onUpdateGroup,
+  onDeleteTaskType,
+  onUpdateTaskType,
   activeView,
   onNavigate,
 }: SidebarProps) {
@@ -47,15 +59,17 @@ export default function Sidebar({
   
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showTaskTypeModal, setShowTaskTypeModal] = useState(false);
   const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
   const [groupsCollapsed, setGroupsCollapsed] = useState(false);
+  const [taskTypesCollapsed, setTaskTypesCollapsed] = useState(false);
   const [priorityName, setPriorityName] = useState('');
   const [groupName, setGroupName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   // Delete Modal State
-  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'group' | 'priority' } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'group' | 'priority' | 'taskType' } | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
 
   const handleCreatePriority = async (e: React.FormEvent) => {
@@ -90,16 +104,22 @@ export default function Sidebar({
     }
   };
 
+
+
   const handleLogout = async () => {
     try { await logout(); } catch (err: any) { setError(err.message || 'Failed to logout'); }
   };
 
-  const getLinkedTasks = (id: string, type: 'group' | 'priority') => {
+  const getLinkedTasks = (id: string, type: 'group' | 'priority' | 'taskType') => {
     const linked: Task[] = [];
     Object.values(groupedTasks).forEach(groupMap => {
       Object.entries(groupMap).forEach(([groupId, tasks]) => {
         tasks.forEach(t => {
-          if ((type === 'group' && groupId === id) || (type === 'priority' && t.priorityId === id)) {
+          if (
+            (type === 'group' && groupId === id) || 
+            (type === 'priority' && t.priorityId === id) ||
+            (type === 'taskType' && t.typeId === id)
+          ) {
             linked.push(t);
           }
         });
@@ -108,7 +128,7 @@ export default function Sidebar({
     return linked;
   };
 
-  const confirmDelete = (id: string, name: string, type: 'group' | 'priority') => {
+  const confirmDelete = (id: string, name: string, type: 'group' | 'priority' | 'taskType') => {
     setItemToDelete({ id, name, type });
   };
 
@@ -118,8 +138,10 @@ export default function Sidebar({
     try {
       if (itemToDelete.type === 'priority') {
         await onDeletePriority(itemToDelete.id);
-      } else {
+      } else if (itemToDelete.type === 'group') {
         await onDeleteGroup(itemToDelete.id);
+      } else {
+        await onDeleteTaskType(itemToDelete.id);
       }
       setItemToDelete(null);
     } catch (err: any) {
@@ -244,6 +266,45 @@ export default function Sidebar({
                 >
                   <Plus size={16} />
                   {t('new_group')}
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Task Types */}
+          <div>
+            <div
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', cursor: 'pointer' }}
+              onClick={() => setTaskTypesCollapsed(!taskTypesCollapsed)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {taskTypesCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
+                <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('task_types')}</span>
+              </div>
+              <span className="badge">{taskTypes.length}</span>
+            </div>
+
+            {!taskTypesCollapsed && (
+              <>
+                {taskTypes.length > 0 ? (
+                  <TaskTypeList
+                    taskTypes={taskTypes}
+                    onUpdateOrder={onUpdateTaskTypeOrder}
+                    onDelete={(id) => confirmDelete(id, taskTypes.find(t => t.id === id)?.name || '', 'taskType')}
+                    onUpdate={onUpdateTaskType}
+                  />
+                ) : (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
+                    {t('no_task_types_yet')}
+                  </p>
+                )}
+
+                <button
+                  className="sidebar-add-btn"
+                  onClick={() => { setShowTaskTypeModal(true); setError(''); }}
+                >
+                  <Plus size={16} />
+                  {t('new_task_type')}
                 </button>
               </>
             )}
@@ -376,10 +437,20 @@ export default function Sidebar({
           </div>
         </div>
       )}
+      {/* ── Task Type Modal ── */}
+      <CreateTaskTypeModal
+        isOpen={showTaskTypeModal}
+        onClose={() => setShowTaskTypeModal(false)}
+        onCreate={onCreateTaskType}
+      />
       {/* ── Confirm Delete Modal ── */}
       {itemToDelete && (
         <ConfirmDeleteModal
-          titleKey={itemToDelete.type === 'priority' ? 'delete_priority_title' : 'delete_group_title'}
+          titleKey={
+            itemToDelete.type === 'priority' ? 'delete_priority_title' : 
+            itemToDelete.type === 'group' ? 'delete_group_title' : 
+            'delete_task_type_title'
+          }
           itemName={itemToDelete.name}
           linkedTasks={getLinkedTasks(itemToDelete.id, itemToDelete.type)}
           onConfirm={executeDelete}

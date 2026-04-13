@@ -18,6 +18,15 @@ export interface Group {
   createdAt: Timestamp;
 }
 
+export interface TaskType {
+  id: string;
+  userId: string;
+  name: string;
+  order: number;
+  color?: string;
+  createdAt: Timestamp;
+}
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -30,6 +39,7 @@ export interface Task {
   title: string;
   priorityId: string;
   groupId: string;
+  typeId?: string | null;               // Optional categorization (Quiz, Tarea, etc.)
   dueDate: string | null;
   completed?: boolean;
   createdAt: Timestamp;

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Task, Priority, Group, ChecklistItem, UserSettings } from '@/types/index';
+import { Task, Priority, Group, TaskType, ChecklistItem, UserSettings } from '@/types/index';
 import { useTranslation } from '@/providers/I18nProvider';
 import CustomSelect from '@/components/shared/CustomSelect';
 import DatePicker from '@/components/shared/DatePicker';
+import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
 import {
   X as XIcon,
   Calendar as CalendarIcon,
@@ -20,28 +21,33 @@ import {
   ExternalLink,
   AlertCircle,
   Save,
+  PlusCircle,
 } from 'lucide-react';
 
 interface TaskDetailModalProps {
   task: Task;
   priorities: Priority[];
   groups: Group[];
+  taskTypes: TaskType[];
   userSettings: UserSettings | null;
   onClose: () => void;
   onUpdate: (id: string, data: Partial<Task>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onToggle: (id: string, completed: boolean) => Promise<void>;
+  onCreateTaskType: (name: string) => Promise<TaskType>;
 }
 
 export default function TaskDetailModal({
   task,
   priorities,
   groups,
+  taskTypes,
   userSettings,
   onClose,
   onUpdate,
   onDelete,
   onToggle,
+  onCreateTaskType,
 }: TaskDetailModalProps) {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -50,6 +56,7 @@ export default function TaskDetailModal({
   const [title, setTitle] = useState(task.title);
   const [priorityId, setPriorityId] = useState(task.priorityId);
   const [groupId, setGroupId] = useState(task.groupId);
+  const [typeId, setTypeId] = useState<string | null>(task.typeId ?? null);
   const [dueDate, setDueDate] = useState(task.dueDate ?? '');
   const [description, setDescription] = useState(task.description ?? '');
   const [links, setLinks] = useState<string[]>(task.links ?? []);
@@ -65,6 +72,7 @@ export default function TaskDetailModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showTypeCreateModal, setShowTypeCreateModal] = useState(false);
 
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -143,6 +151,7 @@ export default function TaskDetailModal({
         title: title.trim() || task.title,
         priorityId,
         groupId,
+        typeId,
         dueDate: dueDate || null,
         description: description.trim() || null,
         links,
@@ -220,7 +229,8 @@ export default function TaskDetailModal({
         {/* ── Header ── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '0.75rem',
-          padding: '0.875rem 1.1rem', borderBottom: '1px solid var(--color-border)', flexShrink: 0,
+          padding: '0.75rem 1.1rem', borderBottom: '1px solid var(--color-border)', flexShrink: 0,
+          marginBottom: 0,
         }}>
           <div style={{
             width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
@@ -229,6 +239,7 @@ export default function TaskDetailModal({
           }} />
           <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--color-text-faint)', fontWeight: 600 }}>
             {currentPriority?.name ?? '—'} · {groups.find(g => g.id === groupId)?.name ?? '—'}
+            {typeId && ` · ${taskTypes.find(t => t.id === typeId)?.name ?? ''}`}
           </span>
           <span style={{
             fontSize: '0.68rem', fontWeight: 700, padding: '0.12rem 0.5rem', borderRadius: '999px',
@@ -268,7 +279,77 @@ export default function TaskDetailModal({
         </div>
 
         {/* ── Scrollable body ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: taskTypes.length > 0 ? '0.6rem 1.1rem 1.1rem' : '1rem 1.1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+
+          {/* Task Type Tags (Moved to Top) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.15rem' }}>
+            <button
+              type="button"
+              onClick={() => setTypeId(null)}
+              style={{
+                padding: '0.28rem 0.7rem',
+                borderRadius: '999px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                border: `1.5px solid ${typeId === null ? 'var(--color-primary-light)' : 'var(--color-border)'}`,
+                background: typeId === null ? 'rgba(99,102,241,0.1)' : 'transparent',
+                color: typeId === null ? 'var(--color-primary-light)' : 'var(--color-text-muted)',
+              }}
+            >
+              {t('no_type')}
+            </button>
+            {taskTypes.map((type) => (
+              <button
+                key={type.id}
+                type="button"
+                onClick={() => setTypeId(type.id)}
+                style={{
+                  padding: '0.28rem 0.7rem',
+                  borderRadius: '999px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  border: `1.5px solid ${typeId === type.id ? (type.color || 'var(--color-primary-light)') : 'var(--color-border)'}`,
+                  background: typeId === type.id ? `${type.color || 'var(--color-primary-light)'}15` : 'transparent',
+                  color: typeId === type.id ? (type.color || 'var(--color-primary-light)') : 'var(--color-text-muted)',
+                }}
+              >
+                {type.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowTypeCreateModal(true)}
+              title={t('new_task_type')}
+              style={{
+                padding: '0.28rem 0.5rem',
+                borderRadius: '999px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                border: '1.5px dashed var(--color-border)',
+                background: 'transparent',
+                color: 'var(--color-text-faint)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                e.currentTarget.style.color = 'var(--color-primary-light)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.color = 'var(--color-text-faint)';
+              }}
+            >
+              <PlusCircle size={14} />
+            </button>
+          </div>
 
           {/* Title */}
           <div>
@@ -277,8 +358,7 @@ export default function TaskDetailModal({
               ref={titleRef} style={inp} value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && titleRef.current?.blur()}
-              placeholder={t('task_title_placeholder')}
-            />
+              />
           </div>
 
           {/* Priority + Group */}
@@ -490,6 +570,13 @@ export default function TaskDetailModal({
             </button>
           </div>
         </div>
+
+        <CreateTaskTypeModal
+          isOpen={showTypeCreateModal}
+          onClose={() => setShowTypeCreateModal(false)}
+          onCreate={onCreateTaskType}
+          onSuccess={(type) => setTypeId(type.id)}
+        />
       </div>
     </div>
   );

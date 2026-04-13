@@ -12,7 +12,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Priority, Group, Task, UserSettings } from '@/types/index';
+import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 
 // ============================================================
 // PRIORITIES
@@ -211,13 +211,77 @@ export const updateGroupOrder = async (
 export const deleteGroup = async (groupId: string): Promise<void> => {
   await deleteDoc(doc(db, 'groups', groupId));
 
-  // Also delete all tasks that belonged to this group
+// Also delete all tasks that belonged to this group
   const tasksQ = query(
     collection(db, 'tasks'),
     where('groupId', '==', groupId)
   );
   const snapshot = await getDocs(tasksQ);
   snapshot.docs.forEach((d) => deleteDoc(d.ref));
+};
+
+// ============================================================
+// TASK TYPES
+// ============================================================
+
+export const getTaskTypesByUser = async (userId: string): Promise<TaskType[]> => {
+  const q = query(
+    collection(db, 'taskTypes'),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+  const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as TaskType[];
+  return docs.sort((a, b) => a.order - b.order);
+};
+
+export const createTaskType = async (
+  userId: string,
+  name: string
+): Promise<TaskType> => {
+  const types = await getTaskTypesByUser(userId);
+  const maxOrder = types.length > 0 ? Math.max(...types.map((t) => t.order)) : -1;
+  const color = getRandomColor();
+  const docRef = doc(collection(db, 'taskTypes'));
+  
+  const typeData = {
+    userId,
+    name,
+    order: maxOrder + 1,
+    color,
+    createdAt: Timestamp.now(),
+  };
+
+  setDoc(docRef, typeData).catch((err) => console.error('Error creating task type:', err));
+
+  return { id: docRef.id, ...typeData } as TaskType;
+};
+
+export const updateTaskType = async (
+  typeId: string,
+  data: Partial<TaskType>
+): Promise<void> => {
+  await updateDoc(doc(db, 'taskTypes', typeId), data);
+};
+
+export const updateTaskTypeOrder = async (
+  types: TaskType[]
+): Promise<void> => {
+  const batch = writeBatch(db);
+  types.forEach((type, index) => {
+    const docRef = doc(db, 'taskTypes', type.id);
+    batch.update(docRef, { order: index });
+  });
+  await batch.commit();
+};
+
+export const deleteTaskType = async (typeId: string): Promise<void> => {
+  await deleteDoc(doc(db, 'taskTypes', typeId));
+  // Orphan the tasks (set typeId to null) instead of deleting them
+  const q = query(collection(db, 'tasks'), where('typeId', '==', typeId));
+  const snapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((d) => batch.update(d.ref, { typeId: null }));
+  await batch.commit();
 };
 
 // ============================================================
@@ -245,6 +309,7 @@ export const createTask = async (
   title: string,
   priorityId: string,
   groupId: string,
+  typeId: string | null = null,
   dueDate: string | null = null,
   sendEmailReminder: boolean | null = null,
   addToCalendar: boolean | null = null,
@@ -259,6 +324,7 @@ export const createTask = async (
     title,
     priorityId,
     groupId,
+    typeId,
     dueDate,
     completed: false,
     createdAt: Timestamp.now(),

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePriorities } from '@/hooks/usePriorities';
 import { useGroups } from '@/hooks/useGroups';
+import { useTaskTypes } from '@/hooks/useTaskTypes';
 import { useTasks } from '@/hooks/useTasks';
 import { useUserSettings } from '@/hooks/useUserSettings';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { priorities, loading: priLoad, createPriority, updatePriorityOrder, deletePriority, updatePriority } = usePriorities(user?.uid);
   const { groups, loading: groupLoad, createGroup, updateGroupOrder, deleteGroup, updateGroup } = useGroups(user?.uid);
+  const { taskTypes, loading: typeLoad, createTaskType, updateTaskTypeOrder, deleteTaskType, updateTaskType } = useTaskTypes(user?.uid);
   const { tasks, loading: taskLoad, createTask, deleteTask, toggleTaskCompletion, updateTask } = useTasks(user?.uid);
   const { settings } = useUserSettings();
 
@@ -35,7 +37,7 @@ export default function DashboardPage() {
     return grouped;
   }, [priorities, groups, tasks]);
 
-  const loading = priLoad || groupLoad || taskLoad;
+  const loading = priLoad || groupLoad || typeLoad || taskLoad;
 
   if (loading) {
     return (
@@ -51,15 +53,20 @@ export default function DashboardPage() {
       <Sidebar
         priorities={priorities}
         groups={groups}
+        taskTypes={taskTypes}
         groupedTasks={groupedTasks}
         onCreatePriority={createPriority}
         onCreateGroup={createGroup}
+        onCreateTaskType={createTaskType}
         onUpdatePriorityOrder={updatePriorityOrder}
         onUpdateGroupOrder={updateGroupOrder}
+        onUpdateTaskTypeOrder={updateTaskTypeOrder}
         onDeletePriority={deletePriority}
         onUpdatePriority={updatePriority}
         onDeleteGroup={deleteGroup}
         onUpdateGroup={updateGroup}
+        onDeleteTaskType={deleteTaskType}
+        onUpdateTaskType={updateTaskType}
         activeView={view}
         onNavigate={setView}
       />
@@ -70,8 +77,10 @@ export default function DashboardPage() {
         <MainContent
           priorities={priorities}
           groups={groups}
+          taskTypes={taskTypes}
           groupedTasks={groupedTasks}
           onCreateTask={createTask}
+          onCreateTaskType={createTaskType}
           onDeleteTask={deleteTask}
           onToggleTask={toggleTaskCompletion}
           onUpdateTask={updateTask}

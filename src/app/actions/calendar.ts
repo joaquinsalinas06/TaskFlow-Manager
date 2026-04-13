@@ -37,7 +37,8 @@ export async function createCalendarEvent(
   priorityName?: string,
   groupName?: string,
   links?: string[],
-  checklistItems?: { text: string; done: boolean }[]
+  checklistItems?: { text: string; done: boolean }[],
+  taskTypeName?: string
 ): Promise<CalendarEventResult> {
   if (!process.env.GOOGLE_OAUTH_CLIENT_ID || !process.env.GOOGLE_OAUTH_CLIENT_SECRET) {
     return { success: false, error: 'Google OAuth not configured on server' };
@@ -55,8 +56,8 @@ export async function createCalendarEvent(
 
     // Build rich HTML description
     let eventDescription = `<b>${taskTitle}</b>`;
-    if (priorityName || groupName) {
-      eventDescription += `<br><i>${priorityName ?? ''} ${priorityName && groupName ? '·' : ''} ${groupName ?? ''}</i>`;
+    if (priorityName || groupName || taskTypeName) {
+      eventDescription += `<br><i>${taskTypeName ? `[${taskTypeName}] ` : ''}${priorityName ?? ''} ${priorityName && groupName ? '·' : ''} ${groupName ?? ''}</i>`;
     }
     
     if (description) {
@@ -85,7 +86,7 @@ export async function createCalendarEvent(
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: `${taskTitle} ${groupName ? `- ${groupName}` : ''}`,
+        summary: `${taskTypeName ? `[${taskTypeName}] ` : ''}${taskTitle} ${groupName ? `- ${groupName}` : ''}`,
         description: eventDescription,
         // All-day event: use "date" (not "dateTime")
         start: { date: dueDate },

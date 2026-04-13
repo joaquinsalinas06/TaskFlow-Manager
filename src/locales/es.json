@@ -11,6 +11,7 @@
   "new_task": "Nueva tarea",
   "create_priority": "Crear prioridad",
   "create_group": "Crear grupo",
+  "create_task_type": "Crear tipo",
   "create_task": "Crear tarea",
   "creating": "Creando...",
   "cancel": "Cancelar",
@@ -106,5 +107,13 @@
   "auth_email": "Correo electrónico",
   "auth_password": "Contraseña",
   "auth_no_account": "¿No tienes cuenta?",
-  "auth_has_account": "¿Ya tienes una cuenta?"
+  "auth_has_account": "¿Ya tienes una cuenta?",
+  "task_types": "Tipos de Tarea",
+  "no_task_types_yet": "Sin tipos aún",
+  "new_task_type": "Nuevo tipo",
+  "task_type": "Tipo de Tarea",
+  "no_type": "Ninguno",
+  "delete_task_type_title": "Eliminar Tipo de Tarea",
+  "task_type_name_label": "Nombre del tipo",
+  "task_type_name_placeholder": "ej: Quiz, Tarea, Parcial..."
 }

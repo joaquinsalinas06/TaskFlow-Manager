@@ -11,6 +11,7 @@
   "new_task": "New task",
   "create_priority": "Create priority",
   "create_group": "Create group",
+  "create_task_type": "Create type",
   "create_task": "Create task",
   "creating": "Creating...",
   "cancel": "Cancel",
@@ -106,5 +107,13 @@
   "auth_email": "Email address",
   "auth_password": "Password",
   "auth_no_account": "Don't have an account?",
-  "auth_has_account": "Already have an account?"
+  "auth_has_account": "Already have an account?",
+  "task_types": "Task Types",
+  "no_task_types_yet": "No types yet",
+  "new_task_type": "New type",
+  "task_type": "Task Type",
+  "no_type": "None",
+  "delete_task_type_title": "Delete Task Type",
+  "task_type_name_label": "Type name",
+  "task_type_name_placeholder": "e.g. Quiz, Homework, Exam..."
 }
