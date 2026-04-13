@@ -23,8 +23,6 @@ export default function CreateTaskTypeModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskTypeName.trim()) return;
@@ -43,6 +41,8 @@ export default function CreateTaskTypeModal({
       setSaving(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

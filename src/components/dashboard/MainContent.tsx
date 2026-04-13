@@ -10,8 +10,9 @@ import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
 import {
   Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail,
   ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink,
-  PlusCircle, Menu
+  PlusCircle, Menu, Sparkles
 } from 'lucide-react';
+import AITaskImportModal from './AITaskImportModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MainContentProps {
@@ -26,6 +27,7 @@ interface MainContentProps {
     priorityName?: string, groupName?: string, typeId?: string | null, typeName?: string
   ) => Promise<Task>;
   onCreateTaskType: (name: string) => Promise<TaskType>;
+  onCreateGroup: (name: string) => Promise<Group>;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
@@ -41,6 +43,7 @@ export default function MainContent({
   taskTypes,
   groupedTasks,
   onCreateTask,
+  onCreateGroup,
   onCreateTaskType,
   onDeleteTask,
   onToggleTask,
@@ -62,6 +65,7 @@ export default function MainContent({
   const [showTypeCreateModal, setShowTypeCreateModal] = useState(false);
   const [taskSendEmail, setTaskSendEmail] = useState<boolean | null>(null);
   const [taskAddCalendar, setTaskAddCalendar] = useState<boolean | null>(null);
+  const [showAIImportModal, setShowAIImportModal] = useState(false);
   
   // Extended task state
   const [taskDescription, setTaskDescription] = useState('');
@@ -279,10 +283,26 @@ export default function MainContent({
               )}
             </div>
           </div>
-          <button onClick={openModal} className="btn btn-primary" style={{ gap: isMobile ? '0' : '0.4rem', padding: isMobile ? '0.5rem' : undefined }}>
-            <Plus size={isMobile ? 20 : 16} />
-            {!isMobile && t('new_task')}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              onClick={() => setShowAIImportModal(true)} 
+              className="btn btn-ghost" 
+              style={{ 
+                gap: '0.4rem', 
+                background: 'rgba(99,102,241,0.05)',
+                border: '1px solid rgba(99,102,241,0.1)',
+                color: 'var(--color-primary-light)',
+                padding: isMobile ? '0.5rem' : '0.5rem 0.85rem'
+              }}
+            >
+              <Sparkles size={isMobile ? 18 : 15} />
+              {!isMobile && t('ia_import')}
+            </button>
+            <button onClick={openModal} className="btn btn-primary" style={{ gap: isMobile ? '0' : '0.4rem', padding: isMobile ? '0.5rem' : undefined }}>
+              <Plus size={isMobile ? 20 : 16} />
+              {!isMobile && t('new_task')}
+            </button>
+          </div>
         </div>
 
         {/* Priority columns */}
@@ -310,6 +330,18 @@ export default function MainContent({
           onClose={() => setShowTypeCreateModal(false)}
           onCreate={onCreateTaskType}
           onSuccess={(type) => setTaskTypeId(type.id)}
+        />
+
+        <AITaskImportModal
+          isOpen={showAIImportModal}
+          onClose={() => setShowAIImportModal(false)}
+          priorities={priorities}
+          groups={groups}
+          taskTypes={taskTypes}
+          userSettings={userSettings}
+          onCreateTask={onCreateTask}
+          onCreateGroup={onCreateGroup}
+          onCreateTaskType={onCreateTaskType}
         />
       </main>
 

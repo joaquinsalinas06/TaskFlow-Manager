@@ -9,7 +9,8 @@ type Translations = Record<string, string>;
 
 interface I18nContextType {
   lang: Language;
-  t: (key: string) => string;
+  t: (key: string, variables?: Record<string, any>) => string;
+  language: Language; // Added for convenience in prompt generation
   toggleLanguage: () => void;
 }
 
@@ -35,10 +36,18 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('app-lang', newLang);
   };
 
-  const t = (key: string): string => {
+  const t = (key: string, variables?: Record<string, any>): string => {
     const dictionary = dictionaries[lang];
     if (!dictionary) return key;
-    return dictionary[key] || key;
+    let translation = dictionary[key] || key;
+
+    if (variables) {
+      Object.entries(variables).forEach(([k, v]) => {
+        translation = translation.replace(`{{${k}}}`, String(v));
+      });
+    }
+
+    return translation;
   };
 
   if (!mounted) {
@@ -46,7 +55,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <I18nContext.Provider value={{ lang, t, toggleLanguage }}>
+    <I18nContext.Provider value={{ lang, t, language: lang, toggleLanguage }}>
       {children}
     </I18nContext.Provider>
   );

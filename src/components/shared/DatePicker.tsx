@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { DateTime } from 'luxon';
 
 interface DatePickerProps {
@@ -74,7 +74,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
       <div 
         className={`input flex items-center justify-between cursor-pointer ${className}`}
         onClick={toggleOpen}
-        style={{ paddingRight: '0.8rem' }}
+        style={{ paddingRight: '0.4rem', gap: '0.5rem' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: value ? 'var(--color-text-base)' : 'var(--color-text-faint)' }}>
           <CalendarIcon size={16} />
@@ -85,9 +85,19 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
             type="button"
             onClick={clearDate}
             className="btn-ghost"
-            style={{ padding: '0.2rem', color: 'var(--color-text-faint)', borderRadius: '50%' }}
+            style={{ 
+              padding: '0.25rem', 
+              color: 'var(--color-text-faint)', 
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-3)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
-             <span style={{ fontSize: '14px', lineHeight: 1 }}>×</span>
+             <X size={12} strokeWidth={3} />
           </button>
         )}
       </div>

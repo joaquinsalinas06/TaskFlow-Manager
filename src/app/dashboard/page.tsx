@@ -97,6 +97,7 @@ export default function DashboardPage() {
           taskTypes={taskTypes}
           groupedTasks={groupedTasks}
           onCreateTask={createTask}
+          onCreateGroup={createGroup}
           onCreateTaskType={createTaskType}
           onDeleteTask={deleteTask}
           onToggleTask={toggleTaskCompletion}

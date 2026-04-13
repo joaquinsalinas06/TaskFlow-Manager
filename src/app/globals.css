@@ -483,4 +483,21 @@ button, input, select, textarea {
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255,255,255,0.06);
   }
+
+  .label-tiny {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  .input-inline {
+    transition: all 0.2s ease;
+  }
+  .input-inline:focus {
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+  }
 }
