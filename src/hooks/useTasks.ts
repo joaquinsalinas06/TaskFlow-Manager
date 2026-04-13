@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Task } from '@/types/index';
+import { Task, ChecklistItem } from '@/types/index';
 import {
   getTasksByUser,
   createTask as firestoreCreateTask,
@@ -71,7 +71,7 @@ export const useTasks = (userId: string | undefined) => {
               {
                 accessToken: settings.googleAccessToken,
                 accessTokenExpiry: settings.googleTokenExpiry,
-                refreshToken: settings.googleRefreshToken,
+                refreshToken: settings.googleRefreshToken!,
               },
               title,
               dueDate,
@@ -168,7 +168,7 @@ export const useTasks = (userId: string | undefined) => {
             deleteCalendarEvent({
               accessToken: settings.googleAccessToken,
               accessTokenExpiry: settings.googleTokenExpiry,
-              refreshToken: settings.googleRefreshToken,
+              refreshToken: settings.googleRefreshToken!,
             }, taskToDelete.calendarEventId!);
           });
         }
