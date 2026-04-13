@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 import TaskItem from '@/components/task/TaskItem';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface GroupSectionProps {
   priorities: Priority[];
@@ -85,7 +86,13 @@ export default function GroupSection({
         onClick={() => setCollapsed(!collapsed)}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+          <motion.span
+            animate={{ rotate: collapsed ? -90 : 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', display: 'inline-block' }}
+          >
+            ▼
+          </motion.span>
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-muted)', fontFamily: 'var(--font-heading)' }}>
             {group.name}
           </span>
@@ -96,32 +103,42 @@ export default function GroupSection({
       </div>
 
       {/* Tasks */}
-      {!collapsed && (
-        tasks.length > 0 ? (
-          <div style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            {sortedTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                priorities={priorities}
-                groups={groups}
-                taskTypes={taskTypes}
-                userSettings={userSettings}
-                task={task}
-                onDelete={onDeleteTask}
-                onToggle={onToggleTask}
-                onUpdate={onUpdateTask}
-                onCreateTaskType={onCreateTaskType}
-              />
-            ))}
-          </div>
-        ) : (
-          <div style={{ padding: '0.75rem 1rem' }}>
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
-              {t('no_tasks_in_group')}
-            </p>
-          </div>
-        )
-      )}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            {tasks.length > 0 ? (
+              <div style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {sortedTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    priorities={priorities}
+                    groups={groups}
+                    taskTypes={taskTypes}
+                    userSettings={userSettings}
+                    task={task}
+                    onDelete={onDeleteTask}
+                    onToggle={onToggleTask}
+                    onUpdate={onUpdateTask}
+                    onCreateTaskType={onCreateTaskType}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '0.75rem 1rem' }}>
+                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-faint)', fontStyle: 'italic' }}>
+                  {t('no_tasks_in_group')}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

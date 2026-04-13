@@ -12,6 +12,7 @@ import {
   ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink,
   PlusCircle
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MainContentProps {
   priorities: Priority[];
@@ -523,88 +524,98 @@ export default function MainContent({
                 </div>
 
                 {/* ── Extended options (collapsed by default) ── */}
-                {showMore && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                    {/* Description */}
-                    <div>
-                      <label style={lbl}><FileText size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_description_label')}</label>
-                      <textarea
-                        style={{
-                          ...inp, resize: 'vertical', minHeight: '72px', lineHeight: 1.5,
-                          fontSize: '0.85rem', padding: '0.55rem 0.75rem',
-                        } as React.CSSProperties}
-                        value={taskDescription}
-                        onChange={(e) => setTaskDescription(e.target.value)}
-                        placeholder={t('task_description_placeholder')}
-                      />
-                    </div>
+                <AnimatePresence>
+                  {showMore && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', paddingTop: '1rem' }}>
+                        {/* Description */}
+                        <div>
+                          <label style={lbl}><FileText size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_description_label')}</label>
+                          <textarea
+                            style={{
+                              ...inp, resize: 'vertical', minHeight: '72px', lineHeight: 1.5,
+                              fontSize: '0.85rem', padding: '0.55rem 0.75rem',
+                            } as React.CSSProperties}
+                            value={taskDescription}
+                            onChange={(e) => setTaskDescription(e.target.value)}
+                            placeholder={t('task_description_placeholder')}
+                          />
+                        </div>
 
-                    {/* Links */}
-                    <div>
-                      <label style={lbl}><LinkIcon size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_links_label')}</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: taskLinks.length > 0 ? '0.45rem' : 0 }}>
-                        {taskLinks.map((url, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.3rem 0.6rem' }}>
-                            <ExternalLink size={11} style={{ color: 'var(--color-primary-light)', flexShrink: 0 }} />
-                            <a href={url.startsWith('http') ? url : `https://${url}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.preventDefault()}
-                              style={{ flex: 1, fontSize: '0.78rem', color: 'var(--color-primary-light)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {url}
-                            </a>
-                            <button type="button" onClick={() => removeLink(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem', flexShrink: 0 }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
-                              <XIcon size={11} />
+                        {/* Links */}
+                        <div>
+                          <label style={lbl}><LinkIcon size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_links_label')}</label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: taskLinks.length > 0 ? '0.45rem' : 0 }}>
+                            {taskLinks.map((url, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.3rem 0.6rem' }}>
+                                <ExternalLink size={11} style={{ color: 'var(--color-primary-light)', flexShrink: 0 }} />
+                                <a href={url.startsWith('http') ? url : `https://${url}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.preventDefault()}
+                                  style={{ flex: 1, fontSize: '0.78rem', color: 'var(--color-primary-light)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {url}
+                                </a>
+                                <button type="button" onClick={() => removeLink(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem', flexShrink: 0 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
+                                  <XIcon size={11} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
+                              value={newLink} onChange={(e) => setNewLink(e.target.value)}
+                              placeholder={t('task_links_placeholder')}
+                              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())} />
+                            <button type="button" onClick={addLink} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
+                              <Plus size={12} />{t('add_link')}
                             </button>
                           </div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
-                          value={newLink} onChange={(e) => setNewLink(e.target.value)}
-                          placeholder={t('task_links_placeholder')}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())} />
-                        <button type="button" onClick={addLink} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
-                          <Plus size={12} />{t('add_link')}
-                        </button>
-                      </div>
-                    </div>
+                        </div>
 
-                    {/* Checklist */}
-                    <div>
-                      <label style={{ ...lbl, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span><CheckSquare size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_checklist_label')}</span>
-                        {taskChecklistItems.length > 0 && (
-                          <span style={{ fontWeight: 700, color: checklistDone === taskChecklistItems.length ? '#22c55e' : 'var(--color-text-faint)' }}>
-                            {checklistDone}/{taskChecklistItems.length}
-                          </span>
-                        )}
-                      </label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.45rem' }}>
-                        {taskChecklistItems.map((item) => (
-                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.28rem 0.5rem', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
-                            <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--color-text-base)', transition: 'all 0.15s' }}>
-                              {item.text}
-                            </span>
-                            <button type="button" onClick={() => removeCheckItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
-                              <XIcon size={11} />
+                        {/* Checklist */}
+                        <div>
+                          <label style={{ ...lbl, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span><CheckSquare size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_checklist_label')}</span>
+                            {taskChecklistItems.length > 0 && (
+                              <span style={{ fontWeight: 700, color: checklistDone === taskChecklistItems.length ? '#22c55e' : 'var(--color-text-faint)' }}>
+                                {checklistDone}/{taskChecklistItems.length}
+                              </span>
+                            )}
+                          </label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.45rem' }}>
+                            {taskChecklistItems.map((item) => (
+                              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.28rem 0.5rem', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                                <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--color-text-base)', transition: 'all 0.15s' }}>
+                                  {item.text}
+                                </span>
+                                <button type="button" onClick={() => removeCheckItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem' }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
+                                  <XIcon size={11} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
+                              value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)}
+                              placeholder={t('checklist_item_placeholder')}
+                              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCheckItem())} />
+                            <button type="button" onClick={addCheckItem} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
+                              <Plus size={12} />{t('add_checklist_item')}
                             </button>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
-                          value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)}
-                          placeholder={t('checklist_item_placeholder')}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCheckItem())} />
-                        <button type="button" onClick={addCheckItem} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
-                          <Plus size={12} />{t('add_checklist_item')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </form>
             </div>
             

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 import GroupSection from '@/components/group/GroupSection';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PriorityColumnProps {
   priorities: Priority[];
@@ -52,7 +53,13 @@ export default function PriorityColumn({
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+              <motion.span
+                animate={{ rotate: collapsed ? -90 : 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', display: 'inline-block' }}
+              >
+                ▼
+              </motion.span>
               <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-base)' }}>
                 {priority.name}
               </h2>
@@ -86,31 +93,41 @@ export default function PriorityColumn({
       </div>
 
       {/* Groups */}
-      {!collapsed && (
-        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {groupsWithTasks.length > 0 ? (
-            groupsWithTasks.map((group) => (
-              <GroupSection
-                key={group.id}
-                priorities={priorities}
-                groups={groups}
-                taskTypes={taskTypes}
-                userSettings={userSettings}
-                group={group}
-                tasks={tasks[group.id] || []}
-                onDeleteTask={onDeleteTask}
-                onToggleTask={onToggleTask}
-                onUpdateTask={onUpdateTask}
-                onCreateTaskType={onCreateTaskType}
-              />
-            ))
-          ) : (
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-faint)', padding: '0.5rem 0' }}>
-              {t('no_groups_associated')}
-            </p>
-          )}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {groupsWithTasks.length > 0 ? (
+                groupsWithTasks.map((group) => (
+                  <GroupSection
+                    key={group.id}
+                    priorities={priorities}
+                    groups={groups}
+                    taskTypes={taskTypes}
+                    userSettings={userSettings}
+                    group={group}
+                    tasks={tasks[group.id] || []}
+                    onDeleteTask={onDeleteTask}
+                    onToggleTask={onToggleTask}
+                    onUpdateTask={onUpdateTask}
+                    onCreateTaskType={onCreateTaskType}
+                  />
+                ))
+              ) : (
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-faint)', padding: '0.5rem 0' }}>
+                  {t('no_groups_associated')}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

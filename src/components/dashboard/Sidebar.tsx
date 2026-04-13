@@ -10,7 +10,8 @@ import GroupList from '@/components/group/GroupList';
 import TaskTypeList from '@/components/task-type/TaskTypeList';
 import ConfirmDeleteModal from '@/components/dashboard/ConfirmDeleteModal';
 import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
-import { LogOut, Settings, Sun, Moon, Plus, ChevronDown, ChevronRight, CheckSquare, X as XIcon, Tag } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon, Plus, ChevronDown, CheckSquare, X as XIcon, Tag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SidebarProps {
   priorities: Priority[];
@@ -198,36 +199,52 @@ export default function Sidebar({
               onClick={() => setPrioritiesCollapsed(!prioritiesCollapsed)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {prioritiesCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
+                <motion.div
+                  animate={{ rotate: prioritiesCollapsed ? -90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex' }}
+                >
+                  <ChevronDown size={14} className="text-faint" />
+                </motion.div>
                 <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('priorities')}</span>
               </div>
               <span className="badge">{priorities.length}</span>
             </div>
 
-            {!prioritiesCollapsed && (
-              <>
-                {priorities.length > 0 ? (
-                  <PriorityList
-                    priorities={priorities}
-                    onUpdatePriorityOrder={onUpdatePriorityOrder}
-                    onDeletePriority={(id) => confirmDelete(id, priorities.find(p => p.id === id)?.name || '', 'priority')}
-                    onUpdatePriority={onUpdatePriority}
-                  />
-                ) : (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
-                    {t('no_priorities_yet')}
-                  </p>
-                )}
-
-                <button
-                  className="sidebar-add-btn"
-                  onClick={() => { setShowPriorityModal(true); setPriorityName(''); setError(''); }}
+            <AnimatePresence initial={false}>
+              {!prioritiesCollapsed && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
                 >
-                  <Plus size={16} />
-                  {t('new_priority')}
-                </button>
-              </>
-            )}
+                  <div style={{ paddingBottom: '0.5rem' }}>
+                    {priorities.length > 0 ? (
+                      <PriorityList
+                        priorities={priorities}
+                        onUpdatePriorityOrder={onUpdatePriorityOrder}
+                        onDeletePriority={(id) => confirmDelete(id, priorities.find(p => p.id === id)?.name || '', 'priority')}
+                        onUpdatePriority={onUpdatePriority}
+                      />
+                    ) : (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
+                        {t('no_priorities_yet')}
+                      </p>
+                    )}
+
+                    <button
+                      className="sidebar-add-btn"
+                      onClick={() => { setShowPriorityModal(true); setPriorityName(''); setError(''); }}
+                    >
+                      <Plus size={16} />
+                      {t('new_priority')}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Groups */}
@@ -237,38 +254,54 @@ export default function Sidebar({
               onClick={() => setGroupsCollapsed(!groupsCollapsed)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {groupsCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
+                <motion.div
+                  animate={{ rotate: groupsCollapsed ? -90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex' }}
+                >
+                  <ChevronDown size={14} className="text-faint" />
+                </motion.div>
                 <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('groups')}</span>
               </div>
               <span className="badge">{groups.length}</span>
             </div>
 
-            {!groupsCollapsed && (
-              <>
-                {groups.length > 0 ? (
-                  <GroupList
-                    groups={groups}
-                    priorities={priorities}
-                    groupedTasks={groupedTasks}
-                    onUpdateGroupOrder={onUpdateGroupOrder}
-                    onDeleteGroup={(id) => confirmDelete(id, groups.find(g => g.id === id)?.name || '', 'group')}
-                    onUpdateGroup={onUpdateGroup}
-                  />
-                ) : (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
-                    {t('no_groups_yet')}
-                  </p>
-                )}
-
-                <button
-                  className="sidebar-add-btn"
-                  onClick={() => { setShowGroupModal(true); setGroupName(''); setError(''); }}
+            <AnimatePresence initial={false}>
+              {!groupsCollapsed && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
                 >
-                  <Plus size={16} />
-                  {t('new_group')}
-                </button>
-              </>
-            )}
+                  <div style={{ paddingBottom: '0.5rem' }}>
+                    {groups.length > 0 ? (
+                      <GroupList
+                        groups={groups}
+                        priorities={priorities}
+                        groupedTasks={groupedTasks}
+                        onUpdateGroupOrder={onUpdateGroupOrder}
+                        onDeleteGroup={(id) => confirmDelete(id, groups.find(g => g.id === id)?.name || '', 'group')}
+                        onUpdateGroup={onUpdateGroup}
+                      />
+                    ) : (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
+                        {t('no_groups_yet')}
+                      </p>
+                    )}
+
+                    <button
+                      className="sidebar-add-btn"
+                      onClick={() => { setShowGroupModal(true); setGroupName(''); setError(''); }}
+                    >
+                      <Plus size={16} />
+                      {t('new_group')}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Task Types */}
@@ -278,36 +311,52 @@ export default function Sidebar({
               onClick={() => setTaskTypesCollapsed(!taskTypesCollapsed)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {taskTypesCollapsed ? <ChevronRight size={14} className="text-faint" /> : <ChevronDown size={14} className="text-faint" />}
+                <motion.div
+                  animate={{ rotate: taskTypesCollapsed ? -90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex' }}
+                >
+                  <ChevronDown size={14} className="text-faint" />
+                </motion.div>
                 <span className="sidebar-section-label" style={{ padding: 0, marginTop: 0, marginBottom: 0 }}>{t('task_types')}</span>
               </div>
               <span className="badge">{taskTypes.length}</span>
             </div>
 
-            {!taskTypesCollapsed && (
-              <>
-                {taskTypes.length > 0 ? (
-                  <TaskTypeList
-                    taskTypes={taskTypes}
-                    onUpdateOrder={onUpdateTaskTypeOrder}
-                    onDelete={(id) => confirmDelete(id, taskTypes.find(t => t.id === id)?.name || '', 'taskType')}
-                    onUpdate={onUpdateTaskType}
-                  />
-                ) : (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
-                    {t('no_task_types_yet')}
-                  </p>
-                )}
-
-                <button
-                  className="sidebar-add-btn"
-                  onClick={() => { setShowTaskTypeModal(true); setError(''); }}
+            <AnimatePresence initial={false}>
+              {!taskTypesCollapsed && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
                 >
-                  <Plus size={16} />
-                  {t('new_task_type')}
-                </button>
-              </>
-            )}
+                  <div style={{ paddingBottom: '0.5rem' }}>
+                    {taskTypes.length > 0 ? (
+                      <TaskTypeList
+                        taskTypes={taskTypes}
+                        onUpdateOrder={onUpdateTaskTypeOrder}
+                        onDelete={(id) => confirmDelete(id, taskTypes.find(t => t.id === id)?.name || '', 'taskType')}
+                        onUpdate={onUpdateTaskType}
+                      />
+                    ) : (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-faint)', padding: '0.25rem 0' }}>
+                        {t('no_task_types_yet')}
+                      </p>
+                    )}
+
+                    <button
+                      className="sidebar-add-btn"
+                      onClick={() => { setShowTaskTypeModal(true); setError(''); }}
+                    >
+                      <Plus size={16} />
+                      {t('new_task_type')}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

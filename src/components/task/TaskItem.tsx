@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Task, Priority, Group, TaskType, UserSettings } from '@/types/index';
 import { Calendar as CalendarIcon, Trash2, FileText, Link as LinkIcon, CheckSquare, Tag } from 'lucide-react';
 import TaskDetailModal from '@/components/task/TaskDetailModal';
+import { motion } from 'framer-motion';
 
 interface TaskItemProps {
   priorities: Priority[];
@@ -54,7 +55,12 @@ export default function TaskItem({ priorities, groups, taskTypes, userSettings, 
 
   return (
     <>
-      <div
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: isDeleting ? 0.4 : 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        whileHover={{ x: 2 }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
@@ -64,8 +70,7 @@ export default function TaskItem({ priorities, groups, taskTypes, userSettings, 
           padding: '0.6rem 0.75rem',
           borderRadius: 'var(--radius-md)',
           background: hovered ? 'var(--color-surface-2)' : 'transparent',
-          transition: 'background 0.15s ease',
-          opacity: isDeleting ? 0.4 : 1,
+          transition: 'background 0.2s ease',
           cursor: 'default',
         }}
       >
@@ -194,7 +199,7 @@ export default function TaskItem({ priorities, groups, taskTypes, userSettings, 
             <Trash2 size={13} />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Detail Modal */}
       {showDetail && (
