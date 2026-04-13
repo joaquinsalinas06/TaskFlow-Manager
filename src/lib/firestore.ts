@@ -99,7 +99,7 @@ const DEFAULT_SETTINGS = (uid: string, email: string): Omit<UserSettings, 'updat
   uid,
   notificationEmail: email,
   emailReminders: false,
-  reminderLeadHours: 24,
+  reminderLeadDays: 1,
   calendarIntegration: false,
   googleRefreshToken: null,
   googleAccessToken: null,

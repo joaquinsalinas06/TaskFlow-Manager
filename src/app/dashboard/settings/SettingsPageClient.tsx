@@ -14,14 +14,12 @@ interface SettingsPageClientProps {
   groups: Group[];
 }
 
-const LEAD_HOUR_OPTIONS = [
-  { value: '1',  labelKey: 'reminder_lead_1h' },
-  { value: '3',  labelKey: 'reminder_lead_3h' },
-  { value: '6',  labelKey: 'reminder_lead_6h' },
-  { value: '12', labelKey: 'reminder_lead_12h' },
-  { value: '24', labelKey: 'reminder_lead_24h' },
-  { value: '48', labelKey: 'reminder_lead_48h' },
-  { value: '72', labelKey: 'reminder_lead_72h' },
+const REMINDER_LEAD_OPTIONS = [
+  { value: '0', labelKey: 'reminder_lead_day_0' },
+  { value: '1', labelKey: 'reminder_lead_day_1' },
+  { value: '2', labelKey: 'reminder_lead_day_2' },
+  { value: '3', labelKey: 'reminder_lead_day_3' },
+  { value: '7', labelKey: 'reminder_lead_day_7' },
 ];
 
 const LANGUAGE_OPTIONS = [
@@ -144,7 +142,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
   // Local draft state — only persist to Firestore on Save
   const [email, setEmail] = useState('');
   const [emailReminders, setEmailReminders] = useState(false);
-  const [leadHours, setLeadHours] = useState('24');
+  const [leadDays, setLeadDays] = useState('1');
   const [language, setLanguage] = useState<'en' | 'es'>('en');
   const [weekStartsOn, setWeekStartsOn] = useState<1 | 7>(1);
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
@@ -162,7 +160,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
     initialSyncDone.current = true;
     setEmail(settings.notificationEmail);
     setEmailReminders(settings.emailReminders);
-    setLeadHours(String(settings.reminderLeadHours));
+    setLeadDays(String(settings.reminderLeadDays ?? 1));
     setLanguage(settings.language || 'en');
     setWeekStartsOn(settings.weekStartsOn || 1);
     setPriorityFilter(settings.priorityFilter);
@@ -175,7 +173,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
     await updateSettings({
       notificationEmail: email,
       emailReminders,
-      reminderLeadHours: Number(leadHours),
+      reminderLeadDays: Number(leadDays),
       language,
       weekStartsOn,
       priorityFilter,
@@ -364,9 +362,9 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
               <div>
                 <CustomSelect
                   label={t('reminder_lead_label')}
-                  value={leadHours}
-                  onChange={setLeadHours}
-                  options={LEAD_HOUR_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+                  value={leadDays}
+                  onChange={setLeadDays}
+                  options={REMINDER_LEAD_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
                 />
               </div>
             </div>

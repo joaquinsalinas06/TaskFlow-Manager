@@ -12,8 +12,8 @@ import { db } from '@/lib/firebase';
 import { sendTaskReminderEmail } from '@/app/actions/notifications';
 import { UserSettings, Task } from '@/types/index';
 
-// Vercel Cron Job hits this route on schedule: "0 */6 * * *"
-// It scans all tasks with pending reminders and sends emails when within the reminder window.
+// Vercel Cron Job hits this route on schedule: "0 0 * * *" (configured in vercel.json)
+// It scans all tasks with pending reminders and sends emails based on Lead Days.
 
 export async function GET(req: NextRequest) {
   // ── Security: validate cron secret ─────────────────────────
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     for (const settingsDoc of settingsSnap.docs) {
       const settings = { ...settingsDoc.data(), uid: settingsDoc.id } as UserSettings;
-      const { uid, notificationEmail, reminderLeadHours, timezone, language, priorityFilter, groupFilter } = settings;
+      const { uid, notificationEmail, reminderLeadDays, timezone, language, priorityFilter, groupFilter } = settings;
 
       // ── 2. Load pending tasks for this user ──────────────────
       const tasksSnap = await getDocs(
@@ -61,20 +61,22 @@ export async function GET(req: NextRequest) {
         if (sendEmailReminder === false) continue;
 
         // ── 3. Apply priority/group filters ──────────────────────
-        if (priorityFilter.length > 0 && !priorityFilter.includes(priorityId)) continue;
-        if (groupFilter.length > 0 && !groupFilter.includes(groupId)) continue;
+        if (priorityFilter?.length > 0 && !priorityFilter.includes(priorityId)) continue;
+        if (groupFilter?.length > 0 && !groupFilter.includes(groupId)) continue;
 
-        // ── 4. Convert dueDate to UTC using user's timezone ─────
+        // ── 4. Calculate if it's the right day to remind ──────────
         const userTz = timezone || 'UTC';
-        const dueInUserTz = DateTime.fromISO(dueDate!, { zone: userTz }).endOf('day');
-        const dueInUTC = dueInUserTz.toUTC();
+        const today = nowUTC.setZone(userTz).startOf('day');
+        const taskDate = DateTime.fromISO(dueDate!, { zone: userTz }).startOf('day');
 
-        // ── 5. Check if we're inside the reminder window ─────────
-        const windowStart = dueInUTC.minus({ hours: reminderLeadHours });
+        const diff = taskDate.diff(today, 'days').days;
+        const roundedDiff = Math.round(diff);
 
-        if (nowUTC < windowStart || nowUTC > dueInUTC) continue;
+        // If roundedDiff matches reminderLeadDays, we send it.
+        // Example: today is 15th, task is 16th -> diff is 1. If leadDays is 1, match!
+        if (roundedDiff !== (reminderLeadDays ?? 1)) continue;
 
-        // ── 6. Send the reminder email ────────────────────────────
+        // ── 5. Send the reminder email ────────────────────────────
         try {
           const result = await sendTaskReminderEmail({
             to: notificationEmail,

@@ -53,7 +53,7 @@ export interface UserSettings {
   uid: string;
   notificationEmail: string;          // Destination email for reminders
   emailReminders: boolean;            // Master toggle for email notifications
-  reminderLeadHours: number;          // Hours before due date to send reminder (e.g. 24)
+  reminderLeadDays: number;           // Days before due date to send reminder (e.g. 1)
   calendarIntegration: boolean;       // Master toggle for Google Calendar
   googleRefreshToken: string | null;  // Persisted refresh token for Calendar API
   googleAccessToken: string | null;   // Short-lived access token (cached)
