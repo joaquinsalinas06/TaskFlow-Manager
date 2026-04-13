@@ -89,7 +89,7 @@ export default function DashboardPage() {
       />
 
       {view === 'settings' ? (
-        <SettingsPageClient priorities={priorities} groups={groups} />
+        <SettingsPageClient priorities={priorities} groups={groups} isMobile={isMobile} />
       ) : (
         <MainContent
           priorities={priorities}

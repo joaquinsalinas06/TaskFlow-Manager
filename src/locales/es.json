@@ -17,6 +17,7 @@
   "cancel": "Cancelar",
   "saving": "Guardando...",
   "save": "Guardar cambios",
+  "save_short": "Guardar",
   "priority_name_label": "Nombre de la prioridad",
   "priority_name_placeholder": "ej. Alta, Urgente, Pendiente...",
   "group_name_label": "Nombre del grupo",

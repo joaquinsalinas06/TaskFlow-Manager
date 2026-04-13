@@ -12,8 +12,8 @@ import { Mail, Calendar as CalendarIcon, Settings as SettingsIcon, Filter, Check
 interface SettingsPageClientProps {
   priorities: Priority[];
   groups: Group[];
+  isMobile?: boolean;
 }
-
 const REMINDER_LEAD_OPTIONS = [
   { value: '0', labelKey: 'reminder_lead_day_0' },
   { value: '1', labelKey: 'reminder_lead_day_1' },
@@ -127,7 +127,7 @@ function FilterPills({
 }
 
 // ─── Main Settings Client Component ─────────────────────────────────────────
-export default function SettingsPageClient({ priorities, groups }: SettingsPageClientProps) {
+export default function SettingsPageClient({ priorities, groups, isMobile }: SettingsPageClientProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
     const {
@@ -269,10 +269,10 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '2rem 2rem 1.5rem',
+        padding: isMobile ? '1rem' : '2rem 2rem 1.5rem',
         borderBottom: '1px solid var(--color-border)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.75rem' : '1.5rem', flex: 1, minWidth: 0 }}>
           <button 
             className="btn btn-ghost btn-icon" 
             onClick={() => document.getElementById('sidebar-settings-btn')?.click()}
@@ -280,15 +280,27 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
           >
             <ChevronLeft size={20} />
           </button>
-          <div style={{ borderLeft: '1px solid var(--color-border)', height: '40px' }} />
-          <div>
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-              <SettingsIcon size={24} color="var(--color-primary)" />
+          <div style={{ borderLeft: '1px solid var(--color-border)', height: isMobile ? '24px' : '40px' }} />
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: isMobile ? '0.4rem' : '0.6rem', 
+              fontSize: isMobile ? '1.15rem' : '1.6rem', 
+              fontWeight: 800, 
+              marginBottom: isMobile ? 0 : '0.25rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              <SettingsIcon size={isMobile ? 18 : 24} color="var(--color-primary)" />
               {t('settings_title')}
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
-              {t('settings_subtitle')}
-            </p>
+            {!isMobile && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                {t('settings_subtitle')}
+              </p>
+            )}
           </div>
         </div>
         <button
@@ -296,26 +308,27 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
           onClick={handleSave}
           disabled={saving}
           className="btn btn-primary"
-          style={{ gap: '0.4rem' }}
+          style={{ gap: '0.4rem', padding: isMobile ? '0.5rem 0.75rem' : undefined, fontSize: isMobile ? '0.82rem' : undefined, flexShrink: 0 }}
         >
           {saving ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff' }} className="animate-spin" />
-              {t('saving')}
+              {isMobile ? '' : t('saving')}
             </span>
           ) : saved ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Check size={14} />
-              {t('settings_saved')}
+              {isMobile ? '' : t('settings_saved')}
             </span>
           ) : (
             <>
               <Save size={16} />
-              {t('save')}
+              {isMobile ? t('save_short') : t('save')}
             </>
           )}
         </button>
       </div>
+
 
       {/* Content */}
       <div style={{ 
