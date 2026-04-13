@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Priority, Group, Task } from '@/types/index';
+import { Priority, Group, Task, UserSettings } from '@/types/index';
 import GroupSection from '@/components/group/GroupSection';
 
 interface PriorityColumnProps {
@@ -10,6 +10,7 @@ interface PriorityColumnProps {
   priority: Priority;
   groups: Group[];
   tasks: Record<string, Task[]>;
+  userSettings: UserSettings | null;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
@@ -20,6 +21,7 @@ export default function PriorityColumn({
   priority,
   groups,
   tasks,
+  userSettings,
   onDeleteTask,
   onToggleTask,
   onUpdateTask,
@@ -37,8 +39,8 @@ export default function PriorityColumn({
   return (
     <div className="priority-card">
       {/* Header */}
-      <div 
-        className="priority-card-header" 
+      <div
+        className="priority-card-header"
         style={{ cursor: 'pointer' }}
         onClick={() => setCollapsed(!collapsed)}
       >
@@ -87,6 +89,8 @@ export default function PriorityColumn({
               <GroupSection
                 key={group.id}
                 priorities={priorities}
+                groups={groups}
+                userSettings={userSettings}
                 group={group}
                 tasks={tasks[group.id] || []}
                 onDeleteTask={onDeleteTask}

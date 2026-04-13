@@ -9,6 +9,7 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MainContent from '@/components/dashboard/MainContent';
 import SettingsPageClient from './settings/SettingsPageClient';
+import { SidebarSkeleton, MainContentSkeleton } from '@/components/shared/Skeletons';
 
 type View = 'dashboard' | 'settings';
 
@@ -38,20 +39,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: 'var(--color-surface-0)',
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '2rem', height: '2rem', borderRadius: '50%',
-            border: '2.5px solid var(--color-surface-4)',
-            borderTopColor: 'var(--color-primary)', display: 'inline-block',
-          }} className="animate-spin" />
-          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-            Loading your tasks…
-          </p>
-        </div>
+      <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', background: 'var(--color-surface-0)' }}>
+        <SidebarSkeleton />
+        <MainContentSkeleton />
       </div>
     );
   }

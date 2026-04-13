@@ -33,7 +33,11 @@ export async function createCalendarEvent(
   tokens: TokenSet,
   taskTitle: string,
   dueDate: string,       // "YYYY-MM-DD"
-  description?: string,
+  description?: string | null,
+  priorityName?: string,
+  groupName?: string,
+  links?: string[],
+  checklistItems?: { text: string; done: boolean }[]
 ): Promise<CalendarEventResult> {
   if (!process.env.GOOGLE_OAUTH_CLIENT_ID || !process.env.GOOGLE_OAUTH_CLIENT_SECRET) {
     return { success: false, error: 'Google OAuth not configured on server' };
@@ -47,14 +51,42 @@ export async function createCalendarEvent(
       expiry_date: tokens.accessTokenExpiry ?? undefined,
     });
 
-    // googleapis will auto-refresh if the access token is expired
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    // Build rich HTML description
+    let eventDescription = `<b>${taskTitle}</b>`;
+    if (priorityName || groupName) {
+      eventDescription += `<br><i>${priorityName ?? ''} ${priorityName && groupName ? '·' : ''} ${groupName ?? ''}</i>`;
+    }
+    
+    if (description) {
+      eventDescription += `<br><br>${description.replace(/\n/g, '<br>')}`;
+    }
+
+    if (links && links.length > 0) {
+      eventDescription += `<br><br><b>Links:</b><ul>`;
+      links.forEach(link => {
+        const href = link.startsWith('http') ? link : `https://${link}`;
+        eventDescription += `<li><a href="${href}">${link}</a></li>`;
+      });
+      eventDescription += `</ul>`;
+    }
+
+    if (checklistItems && checklistItems.length > 0) {
+      eventDescription += `<br><br><b>Checklist:</b><ul>`;
+      checklistItems.forEach(item => {
+        eventDescription += `<li>${item.done ? '✓' : '☐'} ${item.text}</li>`;
+      });
+      eventDescription += `</ul>`;
+    }
+
+    eventDescription += `<br><br><small><i>Managed by TaskFlow App</i></small>`;
 
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: taskTitle,
-        description: description ?? `Task managed by TaskFlow Manager.`,
+        summary: `${taskTitle} ${groupName ? `- ${groupName}` : ''}`,
+        description: eventDescription,
         // All-day event: use "date" (not "dateTime")
         start: { date: dueDate },
         end: { date: dueDate },

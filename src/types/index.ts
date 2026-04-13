@@ -18,6 +18,12 @@ export interface Group {
   createdAt: Timestamp;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -27,6 +33,10 @@ export interface Task {
   dueDate: string | null;
   completed?: boolean;
   createdAt: Timestamp;
+  // Enrichment fields
+  description?: string | null;          // Free-text notes / description
+  links?: string[];                     // Relevant URLs
+  checklistItems?: ChecklistItem[];     // Mini sub-tasks
   // Notification fields
   sendEmailReminder?: boolean | null;   // null = inherit from UserSettings
   addToCalendar?: boolean | null;       // null = inherit from UserSettings
@@ -51,6 +61,7 @@ export interface UserSettings {
   googleEmail?: string | null;        // Email returned from Google for the calendar
   timezone: string;                   // IANA tz string e.g. "America/Mexico_City"
   language: 'en' | 'es';              // Language for notifications
+  weekStartsOn?: 1 | 7;               // 1 = Monday, 7 = Sunday
   priorityFilter: string[];           // Priority IDs that trigger notifications (empty = all)
   groupFilter: string[];              // Group IDs that trigger notifications (empty = all)
   updatedAt: Timestamp;

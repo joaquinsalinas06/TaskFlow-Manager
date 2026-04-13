@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X as XIcon } from 'lucide-react';
+import { GripVertical, X as XIcon, ChevronRight, ChevronDown } from 'lucide-react';
 
 // ==========================================
 // INDIVIDUAL SORTABLE ITEM (GROUP)
@@ -53,6 +53,7 @@ function SortableGroupItem({
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
+  const [tasksCollapsed, setTasksCollapsed] = useState(false);
 
   const handleBlur = () => {
     setIsEditing(false);
@@ -84,10 +85,10 @@ function SortableGroupItem({
         borderRadius: 'var(--radius-md)',
       }}
     >
-      <div 
-        className="sidebar-item priority-list-row" 
-        style={{ 
-          display: 'flex', alignItems: 'center', gap: '0.5rem', 
+      <div
+        className="sidebar-item priority-list-row"
+        style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
           padding: '0.45rem 0.6rem', borderRadius: 'var(--radius-md)'
         }}
       >
@@ -113,7 +114,7 @@ function SortableGroupItem({
           onChange={(val) => onUpdateGroup(group.id, { color: val })}
           size={10}
         />
-        
+
         {/* Editable Name */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {isEditing ? (
@@ -135,7 +136,7 @@ function SortableGroupItem({
               }}
             />
           ) : (
-            <span 
+            <span
               onClick={() => setIsEditing(true)}
               style={{ flex: 1, cursor: 'text', padding: '0.2rem 0' }}
               title="Click to rename"
@@ -144,6 +145,29 @@ function SortableGroupItem({
             </span>
           )}
         </div>
+
+        {/* Collapse task list toggle — only shows when there are tasks */}
+        {groupTasks.length > 0 && !isDragging && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setTasksCollapsed(!tasksCollapsed); }}
+            title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--color-text-faint)',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0.1rem',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}
+          >
+            {tasksCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+          </button>
+        )}
 
         <button
           onClick={() => onDeleteGroup(group.id)}
@@ -167,19 +191,35 @@ function SortableGroupItem({
           <XIcon size={14} />
         </button>
       </div>
-      
-      {/* Task Legend */}
-      {!isDragging && groupTasks.length > 0 && (
-        <div style={{ paddingLeft: '2.5rem', display: 'flex', flexDirection: 'column', gap: '0.1rem', marginBottom: '0.25rem' }}>
+
+      {/* Task Legend — collapsible */}
+      {!isDragging && groupTasks.length > 0 && !tasksCollapsed && (
+        <div style={{
+          paddingLeft: '2.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.1rem',
+          marginBottom: '0.25rem',
+          overflow: 'hidden',
+        }}>
           {groupTasks.map(t => (
             <div key={t.id} style={{
               fontSize: '0.7rem',
-              color: 'var(--color-text-faint)',
+              color: t.completed ? 'var(--color-text-faint)' : 'var(--color-text-faint)',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              opacity: t.completed ? 0.5 : 0.75,
             }}>
-              • {t.title}
+              <span style={{ color: t.completed ? '#22c55e' : 'var(--color-text-faint)' }}>
+                {t.completed ? '✓' : '•'}
+              </span>
+              <span style={{ textDecoration: t.completed ? 'line-through' : 'none' }}>
+                {t.title}
+              </span>
             </div>
           ))}
         </div>

@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Priority, Group, Task } from '@/types/index';
+import { Priority, Group, Task, UserSettings } from '@/types/index';
 import TaskItem from '@/components/task/TaskItem';
 
 interface GroupSectionProps {
   priorities: Priority[];
+  groups: Group[];
+  userSettings: UserSettings | null;
   group: Group;
   tasks: Task[];
   onDeleteTask: (id: string) => Promise<void>;
@@ -16,6 +18,8 @@ interface GroupSectionProps {
 
 export default function GroupSection({
   priorities,
+  groups,
+  userSettings,
   group,
   tasks,
   onDeleteTask,
@@ -35,7 +39,7 @@ export default function GroupSection({
       overflow: 'hidden',
     }}>
       {/* Group header */}
-      <div 
+      <div
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -66,6 +70,8 @@ export default function GroupSection({
               <TaskItem
                 key={task.id}
                 priorities={priorities}
+                groups={groups}
+                userSettings={userSettings}
                 task={task}
                 onDelete={onDeleteTask}
                 onToggle={onToggleTask}

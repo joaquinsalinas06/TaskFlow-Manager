@@ -14,28 +14,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user, loading, router]);
 
+  // Page handles the skeletons internally
   if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-surface-0)',
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '2rem', height: '2rem', borderRadius: '50%',
-            border: '2.5px solid var(--color-surface-4)',
-            borderTopColor: 'var(--color-primary)',
-            display: 'inline-block',
-          }} className="animate-spin" />
-          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-            Loading…
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!user) return null;

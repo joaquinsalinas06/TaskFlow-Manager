@@ -2,17 +2,24 @@
 
 import { useState, useCallback } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
-import { Priority, Group, Task, UserSettings } from '@/types/index';
+import { Priority, Group, Task, UserSettings, ChecklistItem } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
 import CustomSelect from '@/components/shared/CustomSelect';
 import DatePicker from '@/components/shared/DatePicker';
-import { Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail } from 'lucide-react';
+import {
+  Plus, CheckSquare, Target, ListTodo, Calendar as CalendarIcon, Mail,
+  ChevronUp, ChevronDown, FileText, Link as LinkIcon, X as XIcon, ExternalLink
+} from 'lucide-react';
 
 interface MainContentProps {
   priorities: Priority[];
   groups: Group[];
   groupedTasks: Record<string, Record<string, Task[]>>;
-  onCreateTask: (title: string, priorityId: string, groupId: string, dueDate: string | null, sendEmailReminder: boolean | null, addToCalendar: boolean | null) => Promise<Task>;
+  onCreateTask: (
+    title: string, priorityId: string, groupId: string, dueDate: string | null, 
+    sendEmailReminder: boolean | null, addToCalendar: boolean | null, description?: string | null,
+    links?: string[], checklistItems?: ChecklistItem[], priorityName?: string, groupName?: string
+  ) => Promise<Task>;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
@@ -30,6 +37,8 @@ export default function MainContent({
   userSettings,
 }: MainContentProps) {
   const { t } = useTranslation();
+  
+  // Base task state
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
@@ -37,6 +46,15 @@ export default function MainContent({
   const [taskGroupId, setTaskGroupId] = useState(groups[0]?.id || '');
   const [taskSendEmail, setTaskSendEmail] = useState<boolean | null>(null);
   const [taskAddCalendar, setTaskAddCalendar] = useState<boolean | null>(null);
+  
+  // Extended task state
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskLinks, setTaskLinks] = useState<string[]>([]);
+  const [taskChecklistItems, setTaskChecklistItems] = useState<ChecklistItem[]>([]);
+  const [showMore, setShowMore] = useState(false);
+  const [newLink, setNewLink] = useState('');
+  const [newCheckItem, setNewCheckItem] = useState('');
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -52,6 +70,13 @@ export default function MainContent({
     setTaskTitle('');
     setTaskPriorityId(priorities[0]?.id || '');
     setTaskGroupId(groups[0]?.id || '');
+    setTaskDueDate('');
+    setTaskDescription('');
+    setTaskLinks([]);
+    setTaskChecklistItems([]);
+    setShowMore(false);
+    setNewLink('');
+    setNewCheckItem('');
     setError('');
     // Default toggles from user settings (null = inherit)
     setTaskSendEmail(userSettings?.emailReminders ?? null);
@@ -67,16 +92,23 @@ export default function MainContent({
     }
     setSaving(true);
     try {
-      await onCreateTask(
+      const _priority = priorities.find(p => p.id === taskPriorityId);
+      const _group = groups.find(g => g.id === taskGroupId);
+      
+      const created = await onCreateTask(
         taskTitle.trim(),
         taskPriorityId,
         taskGroupId,
         taskDueDate ? taskDueDate : null,
         taskDueDate ? taskSendEmail : null,
         taskDueDate ? taskAddCalendar : null,
+        taskDescription.trim() || null,
+        taskLinks.length > 0 ? taskLinks : undefined,
+        taskChecklistItems.length > 0 ? taskChecklistItems : undefined,
+        _priority?.name,
+        _group?.name
       );
-      setTaskTitle('');
-      setTaskDueDate('');
+
       setShowTaskModal(false);
       setError('');
     } catch (err: any) {
@@ -85,6 +117,44 @@ export default function MainContent({
       setSaving(false);
     }
   };
+
+  // ── Handlers for extended state ──────────────────────────────────────────
+
+  const addLink = () => {
+    const trimmed = newLink.trim();
+    if (!trimmed) return;
+    setTaskLinks([...taskLinks, trimmed]);
+    setNewLink('');
+  };
+  const removeLink = (i: number) => {
+    setTaskLinks(taskLinks.filter((_, idx) => idx !== i));
+  };
+
+  const addCheckItem = () => {
+    const trimmed = newCheckItem.trim();
+    if (!trimmed) return;
+    const item: ChecklistItem = { id: Date.now().toString(), text: trimmed, done: false };
+    setTaskChecklistItems([...taskChecklistItems, item]);
+    setNewCheckItem('');
+  };
+  const removeCheckItem = (id: string) => {
+    setTaskChecklistItems(taskChecklistItems.filter((c) => c.id !== id));
+  };
+
+
+  // ── Inline styles ─────────────────────────────────────────────────────────
+  const inp: React.CSSProperties = {
+    width: '100%', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md)', color: 'var(--color-text-base)', fontSize: '0.875rem',
+    padding: '0.5rem 0.75rem', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+    transition: 'border-color 0.15s',
+  };
+  const lbl: React.CSSProperties = {
+    fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-faint)',
+    textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem', display: 'block',
+  };
+
+  // ── Empty States ──────────────────────────────────────────────────────────
 
   if (priorities.length === 0) {
     return (
@@ -125,6 +195,9 @@ export default function MainContent({
       </main>
     );
   }
+
+  const checklistDone = taskChecklistItems.filter(c => c.done).length;
+  const hasRichContent = !!taskDescription || taskLinks.length > 0 || taskChecklistItems.length > 0;
 
   return (
     <>
@@ -180,6 +253,7 @@ export default function MainContent({
                 priority={priority}
                 groups={groups}
                 tasks={groupedTasks[priority.id] || {}}
+                userSettings={userSettings}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
                 onUpdateTask={onUpdateTask}
@@ -192,8 +266,14 @@ export default function MainContent({
       {/* ── New Task Modal ── */}
       {showTaskModal && (
         <div className="modal-backdrop" onClick={() => setShowTaskModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{
+            maxWidth: '540px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 0
+          }}>
+            <div className="modal-header" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
               <span className="modal-title">{t('new_task')}</span>
               <button
                 type="button"
@@ -201,137 +281,258 @@ export default function MainContent({
                 onClick={() => setShowTaskModal(false)}
                 aria-label={t('cancel')}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                <XIcon size={16} />
               </button>
             </div>
 
-            {error && (
-              <div style={{
-                marginBottom: '1rem',
-                padding: '0.65rem 0.9rem',
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                borderRadius: 'var(--radius-md)',
-                color: '#fca5a5',
-                fontSize: '0.82rem',
-              }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              <div>
-                <label className="label">{t('task_title_label')}</label>
-                <input
-                  className="input"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  placeholder={t('task_title_placeholder')}
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="label">{t('due_date_label')}</label>
-                <DatePicker 
-                  value={taskDueDate === '' ? null : taskDueDate} 
-                  onChange={(val) => setTaskDueDate(val || '')} 
-                  placeholder={t('due_date_label')}
-                />
-              </div>
-
-              {/* Notification micro-toggles — only show when due date is set */}
-              {taskDueDate && (
+            <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+              {error && (
                 <div style={{
-                  display: 'flex', gap: '0.75rem', padding: '0.65rem 0.85rem',
-                  background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-border)',
+                  marginBottom: '1rem',
+                  padding: '0.65rem 0.9rem',
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#fca5a5',
+                  fontSize: '0.82rem',
                 }}>
-                  {/* Email toggle */}
-                  {userSettings?.emailReminders !== undefined && (
-                    <button
-                      type="button"
-                      id="task-modal-email-toggle"
-                      onClick={() => setTaskSendEmail((prev) => prev === null ? (userSettings?.emailReminders ?? false) : !prev)}
-                      title={t('send_reminder')}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.35rem',
-                        padding: '0.25rem 0.6rem', borderRadius: '999px',
-                        border: `1.5px solid ${(taskSendEmail ?? userSettings?.emailReminders) ? '#6366f1' : 'var(--color-border)'}`,
-                        background: (taskSendEmail ?? userSettings?.emailReminders) ? 'rgba(99,102,241,0.12)' : 'transparent',
-                        color: (taskSendEmail ?? userSettings?.emailReminders) ? 'var(--color-primary-light)' : 'var(--color-text-faint)',
-                        fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                      }}
-                    >
-                      <Mail size={12} />
-                      {t('send_reminder')}
-                    </button>
-                  )}
-
-                  {/* Calendar toggle */}
-                  {userSettings?.calendarIntegration !== undefined && (
-                    <button
-                      type="button"
-                      id="task-modal-calendar-toggle"
-                      onClick={() => setTaskAddCalendar((prev) => prev === null ? (userSettings?.calendarIntegration ?? false) : !prev)}
-                      title={t('add_to_calendar')}
-                      disabled={!userSettings?.googleRefreshToken}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.35rem',
-                        padding: '0.25rem 0.6rem', borderRadius: '999px',
-                        border: `1.5px solid ${(taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? '#22c55e' : 'var(--color-border)'}`,
-                        background: (taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? 'rgba(34,197,94,0.1)' : 'transparent',
-                        color: (taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? '#22c55e' : 'var(--color-text-faint)',
-                        fontSize: '0.72rem', fontWeight: 600,
-                        cursor: userSettings?.googleRefreshToken ? 'pointer' : 'not-allowed',
-                        opacity: userSettings?.googleRefreshToken ? 1 : 0.5,
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      <CalendarIcon size={12} />
-                      {t('add_to_calendar')}
-                    </button>
-                  )}
+                  {error}
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <CustomSelect
-                  label={t('priority')}
-                  options={priorities.map(p => ({ value: p.id, label: p.name, color: p.color }))}
-                  value={taskPriorityId}
-                  onChange={setTaskPriorityId}
-                />
-                
-                <CustomSelect
-                  label={t('group')}
-                  options={groups.map(g => ({ value: g.id, label: g.name, color: g.color }))}
-                  value={taskGroupId}
-                  onChange={setTaskGroupId}
-                />
-              </div>
+              <form id="create-task-form" onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                <div>
+                  <label className="label">{t('task_title_label')}</label>
+                  <input
+                    className="input"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    placeholder={t('task_title_placeholder')}
+                    autoFocus
+                  />
+                </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                <button
-                  type="submit"
-                  disabled={saving || !taskTitle.trim()}
-                  className="btn btn-primary"
-                  style={{ flex: 1 }}
-                >
-                  {saving ? t('creating') : t('create_task')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setShowTaskModal(false)}
-                  style={{ flex: 1 }}
-                >
-                  {t('cancel')}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="label">{t('due_date_label')}</label>
+                  <DatePicker 
+                    value={taskDueDate === '' ? null : taskDueDate} 
+                    onChange={(val) => setTaskDueDate(val || '')} 
+                    placeholder={t('due_date_label')}
+                    weekStartsOn={userSettings?.weekStartsOn}
+                  />
+                </div>
+
+                {/* Notification micro-toggles */}
+                {taskDueDate && (
+                  <div style={{
+                    display: 'flex', gap: '0.75rem', padding: '0.65rem 0.85rem',
+                    background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border)',
+                  }}>
+                    {/* Email toggle */}
+                    {userSettings?.emailReminders !== undefined && (
+                      <button
+                        type="button"
+                        id="task-modal-email-toggle"
+                        onClick={() => setTaskSendEmail((prev) => prev === null ? (userSettings?.emailReminders ?? false) : !prev)}
+                        title={t('send_reminder')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.35rem',
+                          padding: '0.25rem 0.6rem', borderRadius: '999px',
+                          border: `1.5px solid ${(taskSendEmail ?? userSettings?.emailReminders) ? '#6366f1' : 'var(--color-border)'}`,
+                          background: (taskSendEmail ?? userSettings?.emailReminders) ? 'rgba(99,102,241,0.12)' : 'transparent',
+                          color: (taskSendEmail ?? userSettings?.emailReminders) ? 'var(--color-primary-light)' : 'var(--color-text-faint)',
+                          fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                        }}
+                      >
+                        <Mail size={12} />
+                        {t('send_reminder')}
+                      </button>
+                    )}
+
+                    {/* Calendar toggle */}
+                    {userSettings?.calendarIntegration !== undefined && (
+                      <button
+                        type="button"
+                        id="task-modal-calendar-toggle"
+                        onClick={() => setTaskAddCalendar((prev) => prev === null ? (userSettings?.calendarIntegration ?? false) : !prev)}
+                        title={t('add_to_calendar')}
+                        disabled={!userSettings?.googleRefreshToken}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.35rem',
+                          padding: '0.25rem 0.6rem', borderRadius: '999px',
+                          border: `1.5px solid ${(taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? '#22c55e' : 'var(--color-border)'}`,
+                          background: (taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? 'rgba(34,197,94,0.1)' : 'transparent',
+                          color: (taskAddCalendar ?? userSettings?.calendarIntegration) && userSettings?.googleRefreshToken ? '#22c55e' : 'var(--color-text-faint)',
+                          fontSize: '0.72rem', fontWeight: 600,
+                          cursor: userSettings?.googleRefreshToken ? 'pointer' : 'not-allowed',
+                          opacity: userSettings?.googleRefreshToken ? 1 : 0.5,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <CalendarIcon size={12} />
+                        {t('add_to_calendar')}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <CustomSelect
+                    label={t('priority')}
+                    options={priorities.map(p => ({ value: p.id, label: p.name, color: p.color }))}
+                    value={taskPriorityId}
+                    onChange={setTaskPriorityId}
+                  />
+                  
+                  <CustomSelect
+                    label={t('group')}
+                    options={groups.map(g => ({ value: g.id, label: g.name, color: g.color }))}
+                    value={taskGroupId}
+                    onChange={setTaskGroupId}
+                  />
+                </div>
+
+                {/* ── MORE OPTIONS TOGGLE ── */}
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowMore(!showMore)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)',
+                      background: showMore ? 'var(--color-surface-2)' : 'transparent',
+                      border: `1px solid ${showMore ? 'var(--color-border)' : 'var(--color-border)'}`,
+                      color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-2)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = showMore ? 'var(--color-surface-2)' : 'transparent'; }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {showMore ? t('less_options') : t('more_options')}
+                      {/* Rich content badges */}
+                      {hasRichContent && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          {taskDescription && <FileText size={12} style={{ color: 'var(--color-primary-light)' }} />}
+                          {taskLinks.length > 0 && <LinkIcon size={12} style={{ color: 'var(--color-primary-light)' }} />}
+                          {taskChecklistItems.length > 0 && (
+                            <span style={{ fontSize: '0.65rem', color: checklistDone === taskChecklistItems.length ? '#22c55e' : 'var(--color-primary-light)', fontWeight: 700 }}>
+                              ✓ {checklistDone}/{taskChecklistItems.length}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </div>
+
+                {/* ── Extended options (collapsed by default) ── */}
+                {showMore && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                    {/* Description */}
+                    <div>
+                      <label style={lbl}><FileText size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_description_label')}</label>
+                      <textarea
+                        style={{
+                          ...inp, resize: 'vertical', minHeight: '72px', lineHeight: 1.5,
+                          fontSize: '0.85rem', padding: '0.55rem 0.75rem',
+                        } as React.CSSProperties}
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        placeholder={t('task_description_placeholder')}
+                      />
+                    </div>
+
+                    {/* Links */}
+                    <div>
+                      <label style={lbl}><LinkIcon size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_links_label')}</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: taskLinks.length > 0 ? '0.45rem' : 0 }}>
+                        {taskLinks.map((url, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.3rem 0.6rem' }}>
+                            <ExternalLink size={11} style={{ color: 'var(--color-primary-light)', flexShrink: 0 }} />
+                            <a href={url.startsWith('http') ? url : `https://${url}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.preventDefault()}
+                              style={{ flex: 1, fontSize: '0.78rem', color: 'var(--color-primary-light)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {url}
+                            </a>
+                            <button type="button" onClick={() => removeLink(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem', flexShrink: 0 }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
+                              <XIcon size={11} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
+                          value={newLink} onChange={(e) => setNewLink(e.target.value)}
+                          placeholder={t('task_links_placeholder')}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())} />
+                        <button type="button" onClick={addLink} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
+                          <Plus size={12} />{t('add_link')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Checklist */}
+                    <div>
+                      <label style={{ ...lbl, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span><CheckSquare size={10} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />{t('task_checklist_label')}</span>
+                        {taskChecklistItems.length > 0 && (
+                          <span style={{ fontWeight: 700, color: checklistDone === taskChecklistItems.length ? '#22c55e' : 'var(--color-text-faint)' }}>
+                            {checklistDone}/{taskChecklistItems.length}
+                          </span>
+                        )}
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.45rem' }}>
+                        {taskChecklistItems.map((item) => (
+                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.28rem 0.5rem', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)' }}>
+                            <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--color-text-base)', transition: 'all 0.15s' }}>
+                              {item.text}
+                            </span>
+                            <button type="button" onClick={() => removeCheckItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-faint)', display: 'flex', padding: '0.1rem' }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-danger)')}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-faint)')}>
+                              <XIcon size={11} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <input style={{ ...inp, flex: 1, fontSize: '0.8rem', padding: '0.38rem 0.65rem' }}
+                          value={newCheckItem} onChange={(e) => setNewCheckItem(e.target.value)}
+                          placeholder={t('checklist_item_placeholder')}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCheckItem())} />
+                        <button type="button" onClick={addCheckItem} style={{ flexShrink: 0, padding: '0.38rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}>
+                          <Plus size={12} />{t('add_checklist_item')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+            
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+              <button
+                type="submit"
+                form="create-task-form"
+                disabled={saving || !taskTitle.trim()}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                {saving ? t('creating') : t('create_task')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShowTaskModal(false)}
+                style={{ flex: 1 }}
+              >
+                {t('cancel')}
+              </button>
+            </div>
           </div>
         </div>
       )}

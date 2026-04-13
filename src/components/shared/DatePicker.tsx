@@ -7,9 +7,10 @@ interface DatePickerProps {
   onChange: (val: string | null) => void;
   placeholder?: string;
   className?: string;
+  weekStartsOn?: 1 | 7;
 }
 
-export default function DatePicker({ value, onChange, placeholder = "Select date", className = "" }: DatePickerProps) {
+export default function DatePicker({ value, onChange, placeholder = "Select date", className = "", weekStartsOn = 1 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -56,10 +57,15 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   const daysInMonth = viewDate.daysInMonth;
   const startingDayOfWeek = startOfMonth.weekday; // 1 = Monday, 7 = Sunday
   
-  // Create padded array for empty cells before start of month
-  const emptyDays = startingDayOfWeek === 7 ? 0 : startingDayOfWeek;
+  // Create padded array for empty cells before start of month based on settings
+  const emptyDays = (startingDayOfWeek - weekStartsOn + 7) % 7;
   const blanks = Array.from({ length: emptyDays }).map((_, i) => i);
   const days = Array.from({ length: daysInMonth! }).map((_, i) => i + 1);
+
+  // Reorder days based on weekStartsOn preference
+  const weekDaysHeader = weekStartsOn === 1 
+    ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const displayDate = value ? DateTime.fromISO(value).toLocaleString(DateTime.DATE_MED) : '';
 
@@ -114,7 +120,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
 
           {/* Days Header */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+            {weekDaysHeader.map(day => (
               <div key={day} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-faint)' }}>
                 {day}
               </div>

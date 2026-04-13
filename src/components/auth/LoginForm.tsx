@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from '@/providers/I18nProvider';
+import { Globe } from 'lucide-react';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -13,6 +15,7 @@ export default function LoginForm() {
 
   const router = useRouter();
   const { signUp, signIn, signInWithGoogle } = useAuth();
+  const { t, lang, toggleLanguage } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,29 @@ export default function LoginForm() {
         <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-text-base)' }}>
           TaskFlow
         </span>
+        
+        <button 
+          type="button"
+          onClick={toggleLanguage}
+          title="Toggle Language"
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            padding: '0.4rem 0.8rem',
+            borderRadius: 'var(--radius-full)',
+            color: 'var(--color-text-base)',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <Globe size={14} />
+          {lang === 'en' ? 'EN' : 'ES'}
+        </button>
       </div>
 
       {/* Card */}
@@ -74,12 +100,10 @@ export default function LoginForm() {
         {/* Header */}
         <div style={{ marginBottom: '1.75rem' }}>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text-base)', marginBottom: '0.4rem' }}>
-            {isSignup ? 'Create your account' : 'Welcome back'}
+            {isSignup ? t('auth_signup') : t('auth_welcome')}
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-            {isSignup
-              ? 'Sign up to start managing your tasks'
-              : 'Sign in to continue to your dashboard'}
+            {isSignup ? t('auth_signup_sub') : t('auth_welcome_sub')}
           </p>
         </div>
 
@@ -113,7 +137,7 @@ export default function LoginForm() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Continue with Google
+          {t('auth_google')}
         </button>
 
         {/* Divider */}
@@ -126,7 +150,7 @@ export default function LoginForm() {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label htmlFor="auth-email" className="label">Email address</label>
+            <label htmlFor="auth-email" className="label">{t('auth_email')}</label>
             <input
               id="auth-email"
               type="email"
@@ -139,7 +163,7 @@ export default function LoginForm() {
           </div>
 
           <div>
-            <label htmlFor="auth-password" className="label">Password</label>
+            <label htmlFor="auth-password" className="label">{t('auth_password')}</label>
             <input
               id="auth-password"
               type="password"
@@ -170,17 +194,17 @@ export default function LoginForm() {
                     borderTopColor: '#fff',
                   }}
                 />
-                {isSignup ? 'Creating account…' : 'Signing in…'}
+                {isSignup ? t('auth_signup') : t('auth_login')}
               </>
             ) : (
-              isSignup ? 'Create account' : 'Sign in'
+              isSignup ? t('auth_signup') : t('auth_login')
             )}
           </button>
         </form>
 
         {/* Toggle */}
         <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-          {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
+          {isSignup ? t('auth_has_account') : t('auth_no_account')}{' '}
           <button
             type="button"
             onClick={handleToggleMode}
@@ -193,7 +217,7 @@ export default function LoginForm() {
               padding: 0,
             }}
           >
-            {isSignup ? 'Sign in' : 'Sign up'}
+            {isSignup ? t('auth_login') : t('auth_signup')}
           </button>
         </div>
       </div>

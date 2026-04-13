@@ -6,6 +6,7 @@ import { useUserSettings } from '@/hooks/useUserSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { Priority, Group } from '@/types/index';
 import CustomSelect from '@/components/shared/CustomSelect';
+import { SettingsSkeleton } from '@/components/shared/Skeletons';
 import { Mail, Calendar as CalendarIcon, Settings as SettingsIcon, Filter, Check, Save, Target, ChevronLeft, Globe } from 'lucide-react';
 
 interface SettingsPageClientProps {
@@ -145,6 +146,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
   const [emailReminders, setEmailReminders] = useState(false);
   const [leadHours, setLeadHours] = useState('24');
   const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const [weekStartsOn, setWeekStartsOn] = useState<1 | 7>(1);
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [groupFilter, setGroupFilter] = useState<string[]>([]);
   const [calendarAuto, setCalendarAuto] = useState(false);
@@ -162,6 +164,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
     setEmailReminders(settings.emailReminders);
     setLeadHours(String(settings.reminderLeadHours));
     setLanguage(settings.language || 'en');
+    setWeekStartsOn(settings.weekStartsOn || 1);
     setPriorityFilter(settings.priorityFilter);
     setGroupFilter(settings.groupFilter);
     setCalendarAuto(settings.calendarIntegration);
@@ -174,6 +177,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
       emailReminders,
       reminderLeadHours: Number(leadHours),
       language,
+      weekStartsOn,
       priorityFilter,
       groupFilter,
       calendarIntegration: isCalendarConnected ? calendarAuto : false,
@@ -246,13 +250,7 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
   };
 
   if (loading) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: '2rem', height: '2rem', borderRadius: '50%',
-          border: '2.5px solid var(--color-surface-4)', borderTopColor: 'var(--color-primary)',
-        }} className="animate-spin" />
-      </div>
-    );
+    return <SettingsSkeleton />;
   }
 
   const sectionHeaderStyle: React.CSSProperties = {
@@ -425,11 +423,25 @@ export default function SettingsPageClient({ priorities, groups }: SettingsPageC
                 </div>
               </div>
               <div style={sectionBodyStyle}>
-                <CustomSelect
-                  value={language}
-                  onChange={(val) => setLanguage(val as 'en' | 'es')}
-                  options={LANGUAGE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={labelStyle}>{t('language_label')}</label>
+                  <CustomSelect
+                    value={language}
+                    onChange={(val) => setLanguage(val as 'en' | 'es')}
+                    options={LANGUAGE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={labelStyle}>{t('week_starts_on')}</label>
+                  <CustomSelect
+                    value={String(weekStartsOn)}
+                    onChange={(val) => setWeekStartsOn(Number(val) as 1 | 7)}
+                    options={[
+                      { value: '1', label: t('day_monday') },
+                      { value: '7', label: t('day_sunday') },
+                    ]}
+                  />
+                </div>
               </div>
             </SectionCard>
           )}

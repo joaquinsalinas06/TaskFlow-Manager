@@ -46,11 +46,16 @@ export const useTasks = (userId: string | undefined) => {
       dueDate: string | null = null,
       sendEmailReminder: boolean | null = null,
       addToCalendar: boolean | null = null,
+      description: string | null = null,
+      links: string[] = [],
+      checklistItems: ChecklistItem[] = [],
+      priorityName?: string,
+      groupName?: string
     ) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         const newTask = await firestoreCreateTask(
-          userId, title, priorityId, groupId, dueDate, sendEmailReminder, addToCalendar
+          userId, title, priorityId, groupId, dueDate, sendEmailReminder, addToCalendar, description, links, checklistItems
         );
         setTasks((prev) => [newTask, ...prev]);
 
@@ -61,33 +66,40 @@ export const useTasks = (userId: string | undefined) => {
           (addToCalendar === true || settings?.calendarIntegration) &&
           settings?.googleRefreshToken
         ) {
-          createCalendarEvent(
-            {
-              accessToken: settings.googleAccessToken,
-              accessTokenExpiry: settings.googleTokenExpiry,
-              refreshToken: settings.googleRefreshToken,
-            },
-            title,
-            dueDate,
-          ).then(async (result) => {
-            if (result.success && result.eventId) {
-              // Save the calendar event ID back to the task
-              await firestoreUpdateTask(newTask.id, { calendarEventId: result.eventId });
-              setTasks((prev) =>
-                prev.map((t) => t.id === newTask.id ? { ...t, calendarEventId: result.eventId } : t)
-              );
-              // Persist refreshed token if googleapis silently renewed it
-              if (result.newAccessToken && userId) {
-                await updateSettings({
-                  googleAccessToken: result.newAccessToken,
-                  googleTokenExpiry: result.newAccessTokenExpiry ?? null,
-                });
+          import('@/app/actions/calendar').then(({ createCalendarEvent }) => {
+            createCalendarEvent(
+              {
+                accessToken: settings.googleAccessToken,
+                accessTokenExpiry: settings.googleTokenExpiry,
+                refreshToken: settings.googleRefreshToken,
+              },
+              title,
+              dueDate,
+              description ?? undefined,
+              priorityName,
+              groupName,
+              links,
+              checklistItems
+            ).then(async (result) => {
+              if (result.success && result.eventId) {
+                // Save the calendar event ID back to the task
+                await firestoreUpdateTask(newTask.id, { calendarEventId: result.eventId });
+                setTasks((prev) =>
+                  prev.map((t) => t.id === newTask.id ? { ...t, calendarEventId: result.eventId } : t)
+                );
+                // Persist refreshed token if googleapis silently renewed it
+                if (result.newAccessToken && userId) {
+                  await updateSettings({
+                    googleAccessToken: result.newAccessToken,
+                    googleTokenExpiry: result.newAccessTokenExpiry ?? null,
+                  });
+                }
+              } else if (result.error) {
+                console.error('[useTasks] Calendar event creation failed:', result.error);
               }
-            } else if (result.error) {
-              console.error('[useTasks] Calendar event creation failed:', result.error);
-            }
-          }).catch((err) => {
-            console.error('[useTasks] Calendar error:', err);
+            }).catch((err) => {
+              console.error('[useTasks] Calendar error:', err);
+            });
           });
         }
 
@@ -146,14 +158,26 @@ export const useTasks = (userId: string | undefined) => {
   const deleteTask = useCallback(
     async (taskId: string) => {
       try {
+        const taskToDelete = tasks.find(t => t.id === taskId);
         await firestoreDeleteTask(taskId);
         setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        
+        // Ensure Calendar deletion happens if it was synced
+        if (taskToDelete?.calendarEventId && settings?.googleRefreshToken) {
+          import('@/app/actions/calendar').then(({ deleteCalendarEvent }) => {
+            deleteCalendarEvent({
+              accessToken: settings.googleAccessToken,
+              accessTokenExpiry: settings.googleTokenExpiry,
+              refreshToken: settings.googleRefreshToken,
+            }, taskToDelete.calendarEventId!);
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
     },
-    []
+    [tasks, settings]
   );
 
   return {

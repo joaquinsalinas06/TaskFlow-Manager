@@ -109,6 +109,7 @@ const DEFAULT_SETTINGS = (uid: string, email: string): Omit<UserSettings, 'updat
   language: typeof window !== 'undefined' && navigator.language.startsWith('es') ? 'es' : 'en',
   priorityFilter: [],
   groupFilter: [],
+  weekStartsOn: 1,
 });
 
 export const getUserSettings = async (
@@ -247,6 +248,9 @@ export const createTask = async (
   dueDate: string | null = null,
   sendEmailReminder: boolean | null = null,
   addToCalendar: boolean | null = null,
+  description: string | null = null,
+  links: string[] = [],
+  checklistItems: any[] = [],
 ): Promise<Task> => {
   const docRef = doc(collection(db, 'tasks'));
   
@@ -258,6 +262,9 @@ export const createTask = async (
     dueDate,
     completed: false,
     createdAt: Timestamp.now(),
+    description,
+    links,
+    checklistItems,
     sendEmailReminder,
     addToCalendar,
     calendarEventId: null,
