@@ -567,6 +567,7 @@ export default function MainContent({
                 priorities={priorities}
                 taskTypes={taskTypes}
                 userSettings={userSettings}
+                isMobile={isMobile}
                 onCreateTaskAtDate={(date) => openModal(date)}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}

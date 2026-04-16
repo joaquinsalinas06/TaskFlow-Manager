@@ -15,6 +15,7 @@ interface TaskCalendarViewProps {
   priorities: Priority[];
   taskTypes: TaskType[];
   userSettings: UserSettings | null;
+  isMobile: boolean;
   onCreateTaskAtDate: (date: string) => void;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
@@ -62,6 +63,7 @@ export default function TaskCalendarView({
   priorities,
   taskTypes,
   userSettings,
+  isMobile,
   onCreateTaskAtDate,
   onDeleteTask,
   onToggleTask,
@@ -83,6 +85,10 @@ export default function TaskCalendarView({
       return day.toLocaleDateString(locale, { weekday: 'short' });
     });
   }, [locale]);
+
+  const compactWeekdayLabels = useMemo(() => {
+    return weekdayLabels.map((label) => label.slice(0, 2));
+  }, [weekdayLabels]);
 
   const tasksByDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -181,9 +187,9 @@ export default function TaskCalendarView({
         display: 'flex',
         flexDirection: 'column',
         gap: '0.65rem',
-        height: 'calc(100vh - 180px)',
-        maxHeight: 'calc(100vh - 180px)',
-        minHeight: '520px',
+        height: isMobile ? 'calc(100vh - 165px)' : 'calc(100vh - 180px)',
+        maxHeight: isMobile ? 'calc(100vh - 165px)' : 'calc(100vh - 180px)',
+        minHeight: isMobile ? '420px' : '520px',
       }}
     >
       <div
@@ -191,9 +197,9 @@ export default function TaskCalendarView({
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: isMobile ? 'flex-start' : 'space-between',
           gap: '0.5rem',
-          padding: '0.55rem 0.65rem',
+          padding: isMobile ? '0.5rem 0.55rem' : '0.55rem 0.65rem',
           background: 'var(--color-surface-1)',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-md)',
@@ -202,10 +208,10 @@ export default function TaskCalendarView({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <CalendarDays size={15} color="var(--color-primary-light)" />
-          <strong style={{ fontSize: '0.88rem', textTransform: 'capitalize' }}>{titleLabel}</strong>
+          <strong style={{ fontSize: isMobile ? '0.82rem' : '0.88rem', textTransform: 'capitalize' }}>{titleLabel}</strong>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button className="btn btn-ghost" onClick={goToPrevious} style={{ padding: '0.3rem 0.45rem' }}>
             <ChevronLeft size={15} />
           </button>
@@ -228,7 +234,7 @@ export default function TaskCalendarView({
               className="btn btn-ghost"
               onClick={() => setMode('month')}
               style={{
-                padding: '0.28rem 0.6rem',
+                padding: isMobile ? '0.28rem 0.5rem' : '0.28rem 0.6rem',
                 borderRadius: 0,
                 fontSize: '0.75rem',
                 background: mode === 'month' ? 'var(--color-surface-3)' : 'transparent',
@@ -240,7 +246,7 @@ export default function TaskCalendarView({
               className="btn btn-ghost"
               onClick={() => setMode('week')}
               style={{
-                padding: '0.28rem 0.6rem',
+                padding: isMobile ? '0.28rem 0.5rem' : '0.28rem 0.6rem',
                 borderRadius: 0,
                 fontSize: '0.75rem',
                 background: mode === 'week' ? 'var(--color-surface-3)' : 'transparent',
@@ -265,12 +271,14 @@ export default function TaskCalendarView({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+              gridTemplateColumns: isMobile ? 'repeat(7, minmax(72px, 1fr))' : 'repeat(7, minmax(0, 1fr))',
               gap: '0.45rem',
               flexShrink: 0,
+              overflowX: isMobile ? 'auto' : 'visible',
+              paddingBottom: isMobile ? '0.15rem' : 0,
             }}
           >
-            {weekdayLabels.map((day, idx) => (
+            {(isMobile ? compactWeekdayLabels : weekdayLabels).map((day, idx) => (
               <div
                 key={`${day}-${idx}`}
                 style={{
@@ -290,9 +298,10 @@ export default function TaskCalendarView({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+              gridTemplateColumns: isMobile ? 'repeat(7, minmax(72px, 1fr))' : 'repeat(7, minmax(0, 1fr))',
               gap: '0.45rem',
               overflowY: 'auto',
+              overflowX: isMobile ? 'auto' : 'visible',
               paddingRight: '0.25rem',
               flex: 1,
             }}
@@ -310,11 +319,11 @@ export default function TaskCalendarView({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22, delay: Math.min((day.getDate() % 10) * 0.008, 0.08) }}
                   style={{
-                    minHeight: '118px',
+                    minHeight: isMobile ? '102px' : '118px',
                     background: 'var(--color-surface-1)',
                     border: `1px solid ${dayKey === todayKey ? 'var(--color-primary-light)' : 'var(--color-border)'}`,
                     borderRadius: 'var(--radius-md)',
-                    padding: '0.4rem',
+                    padding: isMobile ? '0.32rem' : '0.4rem',
                     opacity: !inCurrentMonth ? 0.45 : 1,
                     display: 'flex',
                     flexDirection: 'column',
@@ -415,7 +424,7 @@ export default function TaskCalendarView({
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(7, minmax(190px, 1fr))',
+            gridTemplateColumns: isMobile ? 'repeat(7, minmax(78vw, 1fr))' : 'repeat(7, minmax(190px, 1fr))',
             gap: '0.5rem',
             overflowX: 'auto',
             overflowY: 'hidden',
@@ -450,7 +459,7 @@ export default function TaskCalendarView({
               >
                 <div
                   style={{
-                    padding: '0.45rem 0.55rem',
+                    padding: isMobile ? '0.4rem 0.5rem' : '0.45rem 0.55rem',
                     borderBottom: '1px solid var(--color-border)',
                     background: 'var(--color-surface-2)',
                     position: 'sticky',
@@ -459,7 +468,7 @@ export default function TaskCalendarView({
                   }}
                 >
                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textTransform: 'uppercase', fontWeight: 700 }}>
-                    {weekdayLabels[idx]}
+                    {isMobile ? compactWeekdayLabels[idx] : weekdayLabels[idx]}
                   </div>
                   <div
                     style={{
@@ -581,7 +590,7 @@ export default function TaskCalendarView({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
             {tasks
               .filter((task) => !task.dueDate)
-              .slice(0, 14)
+              .slice(0, isMobile ? 8 : 14)
               .map((task) => (
                 <span
                   key={task.id}
