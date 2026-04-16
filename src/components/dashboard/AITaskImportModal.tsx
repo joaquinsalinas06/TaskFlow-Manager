@@ -72,18 +72,27 @@ export default function AITaskImportModal({
     const priorityNames = priorities.map(p => p.name).join(', ');
     const groupNames = groups.map(g => g.name).join(', ');
     const typeNames = taskTypes.map(t => t.name).join(', ');
+    const now = new Date();
+    const localDate = now.toLocaleDateString('en-CA');
+    const localDateTime = now.toLocaleString();
+    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     return `I want you to parse a list of tasks, assignments, or events from the following text or document. 
 I am using a task manager with these existing categories:
 - Existing Priorities: ${priorityNames}
 - Existing Groups: ${groupNames}
 - Existing Task Types: ${typeNames}
+- Current local date: ${localDate}
+- Current local date/time: ${localDateTime}
+- Current local timezone: ${localTimezone}
 
 IMPORTANT STEPS:
 1. First, generate a clearly visible Markdown summary table of all the tasks, dates, and categories you found so I can review them.
 2. If a task doesn't fit into existing groups, infer a logical specific name (e.g., use the Course name like "Sistemas Operativos" if the input is an academic annex, instead of generic terms like "Course" or "Annex").
-3. Translate the content (titles, descriptions) into ${language === 'es' ? 'Spanish' : 'English'}.
-4. Finally, return a valid JSON block with this structure:
+3. Assign priority primarily by urgency based on due date relative to my current local date/time, not by project size or topic type.
+4. If two tasks conflict, prioritize the one with the nearest deadline (example: a deliverable due on April 22 should be higher priority than a final project due in July).
+5. Translate the content (titles, descriptions) into ${language === 'es' ? 'Spanish' : 'English'}.
+6. Finally, return a valid JSON block with this structure:
 
 {
   "newGroups": ["Specific Group Name", ...],
