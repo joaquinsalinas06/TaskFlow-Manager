@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { DateTime } from 'luxon';
 
@@ -12,7 +13,11 @@ interface DatePickerProps {
 
 export default function DatePicker({ value, onChange, placeholder = "Select date", className = "", weekStartsOn = 1 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   
   // Current month being viewed in the calendar
   const [viewDate, setViewDate] = useState<DateTime>(
@@ -20,14 +25,49 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   );
 
   useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target) || popupRef.current?.contains(target)) {
+        return;
+      }
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setIsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const popupHeight = 330;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < popupHeight + 16;
+
+      setPopupPos({
+        left: rect.left,
+        top: openUpwards ? Math.max(8, rect.top - popupHeight - 8) : rect.bottom + 8,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
 
   const toggleOpen = () => setIsOpen(!isOpen);
 
@@ -72,6 +112,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   return (
     <div className="relative w-full" ref={containerRef}>
       <div 
+        ref={triggerRef}
         className={`input flex items-center justify-between cursor-pointer ${className}`}
         onClick={toggleOpen}
         style={{ paddingRight: '0.4rem', gap: '0.5rem' }}
@@ -102,12 +143,12 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         )}
       </div>
 
-      {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 0.5rem)',
-          left: 0,
-          zIndex: 50,
+      {isOpen && mounted && createPortal(
+        <div ref={popupRef} style={{
+          position: 'fixed',
+          top: popupPos.top,
+          left: popupPos.left,
+          zIndex: 12000,
           background: 'var(--color-surface-1)',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)',
@@ -176,7 +217,8 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

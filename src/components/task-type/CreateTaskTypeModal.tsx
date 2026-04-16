@@ -52,8 +52,8 @@ export default function CreateTaskTypeModal({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 2000 }}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ zIndex: 2001 }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 11000 }}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ zIndex: 11001 }}>
         <div className="modal-header">
           <span className="modal-title">{t('new_task_type')}</span>
           <button

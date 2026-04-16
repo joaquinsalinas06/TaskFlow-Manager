@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Option {
   value: string;
@@ -18,14 +19,27 @@ interface CustomSelectProps {
 
 export default function CustomSelect({ options, value, onChange, placeholder = 'Select an option', label }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
@@ -37,12 +51,40 @@ export default function CustomSelect({ options, value, onChange, placeholder = '
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const menuHeight = 220;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < menuHeight + 16;
+
+      setMenuPos({
+        left: rect.left,
+        width: rect.width,
+        top: openUpwards ? Math.max(8, rect.top - menuHeight - 6) : rect.bottom + 6,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
+
   return (
     <div className="custom-select-container" ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', position: 'relative' }}>
       {label && <label className="label" style={{ marginBottom: 0 }}>{label}</label>}
       
       {/* Trigger */}
       <div
+        ref={triggerRef}
         className="input"
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -77,19 +119,20 @@ export default function CustomSelect({ options, value, onChange, placeholder = '
       </div>
 
       {/* Dropdown Menu */}
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div
+          ref={menuRef}
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            width: '100%',
+            position: 'fixed',
+            top: menuPos.top,
+            left: menuPos.left,
+            width: menuPos.width,
             maxHeight: '220px',
             overflowY: 'auto',
             background: 'var(--color-surface-1)',
             border: '1px solid var(--color-surface-2)',
             borderRadius: 'var(--radius-md)',
-            zIndex: 60,
+            zIndex: 12000,
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4)',
             animation: 'slideUp 0.15s ease-out forwards',
             padding: '0.3rem',
@@ -142,7 +185,8 @@ export default function CustomSelect({ options, value, onChange, placeholder = '
               No options available
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

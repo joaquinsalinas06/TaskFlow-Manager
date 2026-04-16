@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '@/providers/I18nProvider';
 
 const PRESET_COLORS = [
@@ -25,12 +26,25 @@ interface ColorPickerProps {
 export default function ColorPicker({ color, onChange, title = 'Change color', size = 12 }: ColorPickerProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || popoverRef.current?.contains(target)) {
+        return;
+      }
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
@@ -39,6 +53,32 @@ export default function ColorPicker({ color, onChange, title = 'Change color', s
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const popoverHeight = 180;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < popoverHeight + 16;
+
+      setPopoverPos({
+        left: rect.left,
+        top: openUpwards ? Math.max(8, rect.top - popoverHeight - 8) : rect.bottom + 8,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
   }, [isOpen]);
 
@@ -51,6 +91,7 @@ export default function ColorPicker({ color, onChange, title = 'Change color', s
     <div className="color-picker-wrapper" ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
       {/* Trigger */}
       <button
+        ref={triggerRef}
         type="button"
         title={title}
         onClick={(e) => {
@@ -76,14 +117,15 @@ export default function ColorPicker({ color, onChange, title = 'Change color', s
       />
 
       {/* Popover */}
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div
+          ref={popoverRef}
           onClick={(e) => e.stopPropagation()}
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            left: 0,
-            zIndex: 50,
+            position: 'fixed',
+            top: popoverPos.top,
+            left: popoverPos.left,
+            zIndex: 12000,
             background: 'var(--color-surface-1)',
             border: '1px solid var(--color-surface-2)',
             borderRadius: 'var(--radius-md)',
@@ -134,7 +176,8 @@ export default function ColorPicker({ color, onChange, title = 'Change color', s
               {color.toUpperCase()}
             </span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
