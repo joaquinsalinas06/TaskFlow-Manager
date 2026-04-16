@@ -37,7 +37,7 @@
   "light_mode": "Modo Claro",
   "dark_mode": "Modo Oscuro",
   "send_reminder": "Recordatorio por email",
-  "add_to_calendar": "Agregar a Calendar",
+  "add_to_calendar": "Agregar al calendario",
   "settings_title": "Configuración",
   "settings_subtitle": "Personaliza tus notificaciones e integraciones",
   "notifications_section": "Notificaciones por Email",
@@ -135,5 +135,14 @@
   "ia_no_tasks_found": "No se encontraron tareas en la respuesta proporcionada.",
   "ia_process_success": "Se han importado con éxito {{tasksCount}} tareas, {{groupsCount}} grupos y {{typesCount}} tipos.",
   "next": "Siguiente",
-  "back": "Volver"
+  "back": "Volver",
+  "calendar": "Calendario",
+  "calendar_view": "Vista Calendario",
+  "board_view": "Vista Tablero",
+  "switch_to_calendar_view": "Cambiar a vista calendario",
+  "switch_to_board_view": "Cambiar a vista tablero",
+  "calendar_today": "Hoy",
+  "calendar_month": "Mes",
+  "calendar_week": "Semana",
+  "calendar_tasks_without_due_date": "Tareas sin fecha límite"
 }

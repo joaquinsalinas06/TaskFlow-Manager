@@ -135,5 +135,14 @@
   "ia_no_tasks_found": "No tasks found in the provided response.",
   "ia_process_success": "Successfully imported {{tasksCount}} tasks, {{groupsCount}} groups, and {{typesCount}} types.",
   "next": "Next",
-  "back": "Back"
+  "back": "Back",
+  "calendar": "Calendar",
+  "calendar_view": "Calendar View",
+  "board_view": "Board View",
+  "switch_to_calendar_view": "Switch to calendar view",
+  "switch_to_board_view": "Switch to board view",
+  "calendar_today": "Today",
+  "calendar_month": "Month",
+  "calendar_week": "Week",
+  "calendar_tasks_without_due_date": "Tasks without due date"
 }

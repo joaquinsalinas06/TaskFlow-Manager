@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '@/providers/I18nProvider';
 import { X as XIcon } from 'lucide-react';
 import { TaskType } from '@/types/index';
@@ -19,9 +20,15 @@ export default function CreateTaskTypeModal({
   onSuccess
 }: CreateTaskTypeModalProps) {
   const { t } = useTranslation();
+  const [mounted, setMounted] = useState(false);
   const [taskTypeName, setTaskTypeName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +49,11 @@ export default function CreateTaskTypeModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+  return createPortal(
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 2000 }}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ zIndex: 2001 }}>
         <div className="modal-header">
           <span className="modal-title">{t('new_task_type')}</span>
           <button
@@ -103,6 +110,7 @@ export default function CreateTaskTypeModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
