@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 import GroupSection from '@/components/group/GroupSection';
@@ -12,11 +11,15 @@ interface PriorityColumnProps {
   groups: Group[];
   taskTypes: TaskType[];
   tasks: Record<string, Task[]>;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   userSettings: UserSettings | null;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
   onCreateTaskType: (name: string) => Promise<TaskType>;
+  getGroupCollapsed: (groupId: string) => boolean;
+  onToggleGroupCollapsed: (groupId: string) => void;
 }
 
 export default function PriorityColumn({
@@ -25,14 +28,17 @@ export default function PriorityColumn({
   groups,
   taskTypes,
   tasks,
+  collapsed,
+  onToggleCollapsed,
   userSettings,
   onDeleteTask,
   onToggleTask,
   onUpdateTask,
   onCreateTaskType,
+  getGroupCollapsed,
+  onToggleGroupCollapsed,
 }: PriorityColumnProps) {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(false);
   const allTasks = Object.values(tasks).flat();
   const completedCount = allTasks.filter((t) => t.completed).length;
   const total = allTasks.length;
@@ -47,7 +53,7 @@ export default function PriorityColumn({
       <div
         className="priority-card-header"
         style={{ cursor: 'pointer' }}
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={onToggleCollapsed}
       >
         <div className="priority-accent-bar" style={{ background: color }} />
         <div style={{ flex: 1 }}>
@@ -113,6 +119,8 @@ export default function PriorityColumn({
                     userSettings={userSettings}
                     group={group}
                     tasks={tasks[group.id] || []}
+                    collapsed={getGroupCollapsed(group.id)}
+                    onToggleCollapsed={() => onToggleGroupCollapsed(group.id)}
                     onDeleteTask={onDeleteTask}
                     onToggleTask={onToggleTask}
                     onUpdateTask={onUpdateTask}

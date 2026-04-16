@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Group, Task, Priority } from '@/types/index';
 import ColorPicker from '@/components/shared/ColorPicker';
 import {
@@ -26,11 +26,15 @@ import { GripVertical, X as XIcon, ChevronRight, ChevronDown, Folder } from 'luc
 function SortableGroupItem({
   group,
   groupTasks,
+  tasksCollapsed,
+  onToggleTasksCollapsed,
   onDeleteGroup,
   onUpdateGroup,
 }: {
   group: Group;
   groupTasks: Task[];
+  tasksCollapsed: boolean;
+  onToggleTasksCollapsed: () => void;
   onDeleteGroup: (id: string) => void;
   onUpdateGroup: (id: string, data: Partial<Group>) => void;
 }) {
@@ -53,7 +57,6 @@ function SortableGroupItem({
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
-  const [tasksCollapsed, setTasksCollapsed] = useState(false);
 
   const handleBlur = () => {
     setIsEditing(false);
@@ -149,7 +152,7 @@ function SortableGroupItem({
         {/* Collapse task list toggle — only shows when there are tasks */}
         {groupTasks.length > 0 && !isDragging && (
           <button
-            onClick={(e) => { e.stopPropagation(); setTasksCollapsed(!tasksCollapsed); }}
+            onClick={(e) => { e.stopPropagation(); onToggleTasksCollapsed(); }}
             title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'}
             style={{
               background: 'none',
@@ -248,6 +251,27 @@ export default function GroupList({
   onDeleteGroup,
   onUpdateGroup,
 }: GroupListProps) {
+  const [tasksCollapsedByGroup, setTasksCollapsedByGroup] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('taskflow.sidebar.groupTasksCollapsed');
+      if (saved) {
+        setTasksCollapsedByGroup(JSON.parse(saved));
+      }
+    } catch {
+      // Ignore malformed localStorage and use defaults.
+    }
+  }, []);
+
+  const toggleGroupTasksCollapsed = (groupId: string) => {
+    setTasksCollapsedByGroup((prev) => {
+      const next = { ...prev, [groupId]: !(prev[groupId] ?? true) };
+      localStorage.setItem('taskflow.sidebar.groupTasksCollapsed', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -294,6 +318,8 @@ export default function GroupList({
                 key={group.id}
                 group={group}
                 groupTasks={groupTasks}
+                tasksCollapsed={tasksCollapsedByGroup[group.id] ?? true}
+                onToggleTasksCollapsed={() => toggleGroupTasksCollapsed(group.id)}
                 onDeleteGroup={onDeleteGroup}
                 onUpdateGroup={onUpdateGroup}
               />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings } from '@/types/index';
 import TaskItem from '@/components/task/TaskItem';
@@ -13,6 +13,8 @@ interface GroupSectionProps {
   userSettings: UserSettings | null;
   group: Group;
   tasks: Task[];
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   onDeleteTask: (id: string) => Promise<void>;
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
@@ -26,13 +28,14 @@ export default function GroupSection({
   userSettings,
   group,
   tasks,
+  collapsed,
+  onToggleCollapsed,
   onDeleteTask,
   onToggleTask,
   onUpdateTask,
   onCreateTaskType,
 }: GroupSectionProps) {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(false);
   const color = group.color || 'var(--color-primary)';
 
   const sortedTasks = useMemo(() => {
@@ -83,7 +86,7 @@ export default function GroupSection({
           borderBottom: (!collapsed && tasks.length > 0) ? '1px solid var(--color-border)' : 'none',
           cursor: 'pointer',
         }}
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={onToggleCollapsed}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <motion.span

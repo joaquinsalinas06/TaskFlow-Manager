@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings, ChecklistItem } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
@@ -54,6 +54,43 @@ export default function MainContent({
   isMobile,
 }: MainContentProps) {
   const { t } = useTranslation();
+  const priorityCollapseKey = 'taskflow.main.priorityCollapsed';
+  const groupCollapseKey = 'taskflow.main.groupCollapsed';
+  const [priorityCollapsedMap, setPriorityCollapsedMap] = useState<Record<string, boolean>>({});
+  const [groupCollapsedMap, setGroupCollapsedMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const savedPriorities = localStorage.getItem(priorityCollapseKey);
+      const savedGroups = localStorage.getItem(groupCollapseKey);
+
+      if (savedPriorities) {
+        setPriorityCollapsedMap(JSON.parse(savedPriorities));
+      }
+      if (savedGroups) {
+        setGroupCollapsedMap(JSON.parse(savedGroups));
+      }
+    } catch {
+      // Ignore malformed localStorage and use defaults.
+    }
+  }, []);
+
+  const togglePriorityCollapsed = useCallback((priorityId: string) => {
+    setPriorityCollapsedMap((prev) => {
+      const next = { ...prev, [priorityId]: !(prev[priorityId] ?? false) };
+      localStorage.setItem(priorityCollapseKey, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const toggleGroupCollapsed = useCallback((priorityId: string, groupId: string) => {
+    const key = `${priorityId}:${groupId}`;
+    setGroupCollapsedMap((prev) => {
+      const next = { ...prev, [key]: !(prev[key] ?? true) };
+      localStorage.setItem(groupCollapseKey, JSON.stringify(next));
+      return next;
+    });
+  }, []);
   
   // Keep completed tasks fetched in memory, but hide them from the main board.
   const visibleGroupedTasks = useMemo(() => {
@@ -329,11 +366,15 @@ export default function MainContent({
                 groups={groups}
                 taskTypes={taskTypes}
                 tasks={visibleGroupedTasks[priority.id] || {}}
+                collapsed={priorityCollapsedMap[priority.id] ?? false}
+                onToggleCollapsed={() => togglePriorityCollapsed(priority.id)}
                 userSettings={userSettings}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
                 onUpdateTask={onUpdateTask}
                 onCreateTaskType={onCreateTaskType}
+                getGroupCollapsed={(groupId: string) => groupCollapsedMap[`${priority.id}:${groupId}`] ?? true}
+                onToggleGroupCollapsed={(groupId: string) => toggleGroupCollapsed(priority.id, groupId)}
               />
             </div>
           ))}
