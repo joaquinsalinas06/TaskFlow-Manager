@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings, ChecklistItem } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
@@ -54,6 +54,20 @@ export default function MainContent({
   isMobile,
 }: MainContentProps) {
   const { t } = useTranslation();
+  
+  // Keep completed tasks fetched in memory, but hide them from the main board.
+  const visibleGroupedTasks = useMemo(() => {
+    const filtered: Record<string, Record<string, Task[]>> = {};
+
+    Object.entries(groupedTasks).forEach(([priorityId, groupsMap]) => {
+      filtered[priorityId] = {};
+      Object.entries(groupsMap).forEach(([groupId, tasks]) => {
+        filtered[priorityId][groupId] = tasks.filter((task) => !task.completed);
+      });
+    });
+
+    return filtered;
+  }, [groupedTasks]);
   
   // Base task state
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -314,7 +328,7 @@ export default function MainContent({
                 priority={priority}
                 groups={groups}
                 taskTypes={taskTypes}
-                tasks={groupedTasks[priority.id] || {}}
+                tasks={visibleGroupedTasks[priority.id] || {}}
                 userSettings={userSettings}
                 onDeleteTask={onDeleteTask}
                 onToggleTask={onToggleTask}
