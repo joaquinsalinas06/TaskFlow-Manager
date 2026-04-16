@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from '@/providers/I18nProvider';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -77,7 +77,7 @@ export default function Sidebar({
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showTaskTypeModal, setShowTaskTypeModal] = useState(false);
   const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
-  const [groupsCollapsed, setGroupsCollapsed] = useState(false);
+  const [groupsCollapsed, setGroupsCollapsed] = useState(true);
   const [taskTypesCollapsed, setTaskTypesCollapsed] = useState(false);
   const [priorityName, setPriorityName] = useState('');
   const [groupName, setGroupName] = useState('');
@@ -87,6 +87,27 @@ export default function Sidebar({
   // Delete Modal State
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'group' | 'priority' | 'taskType' } | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('taskflow.sidebar.sectionCollapsed');
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+
+      if (typeof parsed.prioritiesCollapsed === 'boolean') setPrioritiesCollapsed(parsed.prioritiesCollapsed);
+      if (typeof parsed.groupsCollapsed === 'boolean') setGroupsCollapsed(parsed.groupsCollapsed);
+      if (typeof parsed.taskTypesCollapsed === 'boolean') setTaskTypesCollapsed(parsed.taskTypesCollapsed);
+    } catch {
+      // Ignore malformed localStorage and keep defaults.
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      'taskflow.sidebar.sectionCollapsed',
+      JSON.stringify({ prioritiesCollapsed, groupsCollapsed, taskTypesCollapsed })
+    );
+  }, [prioritiesCollapsed, groupsCollapsed, taskTypesCollapsed]);
 
   const handleCreatePriority = async (e: React.FormEvent) => {
     e.preventDefault();
