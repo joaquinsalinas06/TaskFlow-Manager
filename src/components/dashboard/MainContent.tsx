@@ -5,6 +5,7 @@ import { useTranslation } from '@/providers/I18nProvider';
 import { Priority, Group, Task, TaskType, UserSettings, ChecklistItem } from '@/types/index';
 import PriorityColumn from '@/components/priority/PriorityColumn';
 import TaskCalendarView from "@/components/dashboard/TaskCalendarView";
+import AnalyticsView from '@/components/analytics/AnalyticsView';
 import CustomSelect from "@/components/shared/CustomSelect";
 import DatePicker from "@/components/shared/DatePicker";
 import CreateTaskTypeModal from "@/components/task-type/CreateTaskTypeModal";
@@ -25,6 +26,7 @@ import {
   Menu,
   Sparkles,
   LayoutGrid,
+  BarChart3,
 } from "lucide-react";
 import AITaskImportModal from "./AITaskImportModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,8 +57,8 @@ interface MainContentProps {
   onToggleTask: (id: string, completed: boolean) => Promise<void>;
   onUpdateTask: (id: string, data: Partial<Task>) => Promise<void>;
   userSettings: UserSettings | null;
-  dashboardLayout: "board" | "calendar";
-  onChangeDashboardLayout: (layout: "board" | "calendar") => void;
+  dashboardLayout: "board" | "calendar" | "analytics";
+  onChangeDashboardLayout: (layout: "board" | "calendar" | "analytics") => void;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
   isMobile: boolean;
@@ -487,42 +489,71 @@ export default function MainContent({
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={() =>
-                onChangeDashboardLayout(
-                  dashboardLayout === "board" ? "calendar" : "board",
-                )
-              }
-              className="btn btn-ghost"
+            <div
               style={{
-                gap: "0.35rem",
-                background:
-                  dashboardLayout === "calendar"
-                    ? "var(--color-surface-3)"
-                    : "var(--color-surface-2)",
-                border: "1px solid var(--color-border)",
-                color:
-                  dashboardLayout === "calendar"
-                    ? "var(--color-primary-light)"
-                    : "var(--color-text-muted)",
-                padding: isMobile ? "0.5rem" : "0.5rem 0.75rem",
+                display: 'flex',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                padding: '0.2rem',
+                gap: '0.2rem',
               }}
-              title={
-                dashboardLayout === "calendar"
-                  ? "Switch to board"
-                  : "Switch to calendar"
-              }
             >
-              {dashboardLayout === "calendar" ? (
-                <LayoutGrid size={isMobile ? 18 : 15} />
-              ) : (
-                <CalendarIcon size={isMobile ? 18 : 15} />
-              )}
-              {!isMobile &&
-                (dashboardLayout === "calendar"
-                  ? t("board_view")
-                  : t("calendar"))}
-            </button>
+              <button
+                type="button"
+                onClick={() => onChangeDashboardLayout('board')}
+                className="btn btn-ghost"
+                style={{
+                  gap: '0.3rem',
+                  background:
+                    dashboardLayout === 'board' ? 'var(--color-surface-3)' : 'transparent',
+                  color:
+                    dashboardLayout === 'board'
+                      ? 'var(--color-primary-light)'
+                      : 'var(--color-text-muted)',
+                  padding: isMobile ? '0.42rem' : '0.42rem 0.6rem',
+                }}
+              >
+                <LayoutGrid size={isMobile ? 18 : 14} />
+                {!isMobile && t('board_view')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeDashboardLayout('calendar')}
+                className="btn btn-ghost"
+                style={{
+                  gap: '0.3rem',
+                  background:
+                    dashboardLayout === 'calendar' ? 'var(--color-surface-3)' : 'transparent',
+                  color:
+                    dashboardLayout === 'calendar'
+                      ? 'var(--color-primary-light)'
+                      : 'var(--color-text-muted)',
+                  padding: isMobile ? '0.42rem' : '0.42rem 0.6rem',
+                }}
+              >
+                <CalendarIcon size={isMobile ? 18 : 14} />
+                {!isMobile && t('calendar')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeDashboardLayout('analytics')}
+                className="btn btn-ghost"
+                style={{
+                  gap: '0.3rem',
+                  background:
+                    dashboardLayout === 'analytics' ? 'var(--color-surface-3)' : 'transparent',
+                  color:
+                    dashboardLayout === 'analytics'
+                      ? 'var(--color-primary-light)'
+                      : 'var(--color-text-muted)',
+                  padding: isMobile ? '0.42rem' : '0.42rem 0.6rem',
+                }}
+              >
+                <BarChart3 size={isMobile ? 18 : 14} />
+                {!isMobile && t('analytics')}
+              </button>
+            </div>
             <button
               onClick={() => setShowAIImportModal(true)}
               className="btn btn-ghost"
@@ -573,6 +604,23 @@ export default function MainContent({
                 onToggleTask={onToggleTask}
                 onUpdateTask={onUpdateTask}
                 onCreateTaskType={onCreateTaskType}
+              />
+            </motion.section>
+          ) : dashboardLayout === 'analytics' ? (
+            <motion.section
+              key="analytics-view"
+              initial={{ opacity: 0, y: 18, scale: 0.995 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.99 }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+              style={{ padding: isMobile ? '1rem' : '1.25rem 2rem 2rem' }}
+            >
+              <AnalyticsView
+                tasks={allTasks}
+                groups={groups}
+                priorities={priorities}
+                taskTypes={taskTypes}
+                isMobile={isMobile}
               />
             </motion.section>
           ) : (

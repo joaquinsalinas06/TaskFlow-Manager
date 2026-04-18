@@ -25,6 +25,7 @@ import {
   Folder,
   LayoutGrid,
   CalendarDays,
+  BarChart3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -54,8 +55,8 @@ interface SidebarProps {
   onUpdateGroup: (id: string, data: Partial<Group>) => Promise<void>;
   onDeleteTaskType: (id: string) => Promise<void>;
   onUpdateTaskType: (id: string, data: Partial<TaskType>) => Promise<void>;
-  dashboardLayout: "board" | "calendar";
-  onChangeDashboardLayout: (layout: "board" | "calendar") => void;
+  dashboardLayout: "board" | "calendar" | "analytics";
+  onChangeDashboardLayout: (layout: "board" | "calendar" | "analytics") => void;
   activeView: "dashboard" | "settings";
   onNavigate: (view: "dashboard" | "settings") => void;
   isCollapsed: boolean;
@@ -940,42 +941,65 @@ export default function Sidebar({
                 </button>
               </div>
 
-              <button
-                onClick={() =>
-                  onChangeDashboardLayout(
-                    dashboardLayout === "board" ? "calendar" : "board",
-                  )
-                }
-                className="btn btn-ghost"
+              <div
                 style={{
-                  width: "100%",
-                  justifyContent: "flex-start",
-                  gap: "0.45rem",
-                  padding: "0.45rem 0.65rem",
-                  background:
-                    dashboardLayout === "calendar"
-                      ? "var(--color-surface-2)"
-                      : "transparent",
-                  color:
-                    dashboardLayout === "calendar"
-                      ? "var(--color-primary-light)"
-                      : "var(--color-text-muted)",
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: '0.35rem',
                 }}
-                title={
-                  dashboardLayout === "calendar"
-                    ? t("switch_to_board_view")
-                    : t("switch_to_calendar_view")
-                }
               >
-                {dashboardLayout === "calendar" ? (
-                  <LayoutGrid size={14} />
-                ) : (
-                  <CalendarDays size={14} />
-                )}
-                {dashboardLayout === "calendar"
-                  ? t("board_view")
-                  : t("calendar_view")}
-              </button>
+                <button
+                  onClick={() => onChangeDashboardLayout('board')}
+                  className="btn btn-ghost"
+                  style={{
+                    padding: '0.4rem',
+                    fontSize: '0.72rem',
+                    background:
+                      dashboardLayout === 'board' ? 'var(--color-surface-3)' : 'transparent',
+                    color:
+                      dashboardLayout === 'board'
+                        ? 'var(--color-primary-light)'
+                        : 'var(--color-text-muted)',
+                  }}
+                  title={t('board_view')}
+                >
+                  <LayoutGrid size={13} />
+                </button>
+                <button
+                  onClick={() => onChangeDashboardLayout('calendar')}
+                  className="btn btn-ghost"
+                  style={{
+                    padding: '0.4rem',
+                    fontSize: '0.72rem',
+                    background:
+                      dashboardLayout === 'calendar' ? 'var(--color-surface-3)' : 'transparent',
+                    color:
+                      dashboardLayout === 'calendar'
+                        ? 'var(--color-primary-light)'
+                        : 'var(--color-text-muted)',
+                  }}
+                  title={t('calendar_view')}
+                >
+                  <CalendarDays size={13} />
+                </button>
+                <button
+                  onClick={() => onChangeDashboardLayout('analytics')}
+                  className="btn btn-ghost"
+                  style={{
+                    padding: '0.4rem',
+                    fontSize: '0.72rem',
+                    background:
+                      dashboardLayout === 'analytics' ? 'var(--color-surface-3)' : 'transparent',
+                    color:
+                      dashboardLayout === 'analytics'
+                        ? 'var(--color-primary-light)'
+                        : 'var(--color-text-muted)',
+                  }}
+                  title={t('analytics')}
+                >
+                  <BarChart3 size={13} />
+                </button>
+              </div>
             </div>
           ) : (
             <div
@@ -1023,20 +1047,26 @@ export default function Sidebar({
               <button
                 onClick={() =>
                   onChangeDashboardLayout(
-                    dashboardLayout === "board" ? "calendar" : "board",
+                    dashboardLayout === 'board'
+                      ? 'calendar'
+                      : dashboardLayout === 'calendar'
+                        ? 'analytics'
+                        : 'board',
                   )
                 }
                 title={
-                  dashboardLayout === "calendar"
-                    ? t("board_view")
-                    : t("calendar_view")
+                  dashboardLayout === 'board'
+                    ? t('calendar_view')
+                    : dashboardLayout === 'calendar'
+                      ? t('analytics')
+                      : t('board_view')
                 }
                 style={{
                   width: "1.75rem",
                   height: "1.75rem",
                   borderRadius: "var(--radius-sm)",
                   background:
-                    dashboardLayout === "calendar"
+                    dashboardLayout !== "board"
                       ? "var(--color-surface-3)"
                       : "var(--color-surface-2)",
                   border: "1px solid var(--color-border)",
@@ -1045,16 +1075,12 @@ export default function Sidebar({
                   justifyContent: "center",
                   cursor: "pointer",
                   color:
-                    dashboardLayout === "calendar"
+                    dashboardLayout !== "board"
                       ? "var(--color-primary-light)"
                       : "var(--color-text-muted)",
                 }}
               >
-                {dashboardLayout === "calendar" ? (
-                  <LayoutGrid size={13} />
-                ) : (
-                  <CalendarDays size={13} />
-                )}
+                {dashboardLayout === 'board' ? <CalendarDays size={13} /> : dashboardLayout === 'calendar' ? <BarChart3 size={13} /> : <LayoutGrid size={13} />}
               </button>
             </div>
           )}

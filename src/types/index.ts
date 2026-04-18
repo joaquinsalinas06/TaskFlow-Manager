@@ -42,6 +42,7 @@ export interface Task {
   typeId?: string | null;               // Optional categorization (Quiz, Tarea, etc.)
   dueDate: string | null;
   completed?: boolean;
+  completedAt?: Timestamp | null;
   createdAt: Timestamp;
   // Enrichment fields
   description?: string | null;          // Free-text notes / description

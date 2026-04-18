@@ -50,13 +50,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     return translation;
   };
 
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
-  }
-
   return (
     <I18nContext.Provider value={{ lang, t, language: lang, toggleLanguage }}>
-      {children}
+      <div style={{ visibility: mounted ? 'visible' : 'hidden' }}>{children}</div>
     </I18nContext.Provider>
   );
 }

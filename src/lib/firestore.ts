@@ -327,6 +327,7 @@ export const createTask = async (
     typeId,
     dueDate,
     completed: false,
+    completedAt: null,
     createdAt: Timestamp.now(),
     description,
     links,
@@ -356,7 +357,10 @@ export const toggleTaskCompletion = async (
   taskId: string,
   completed: boolean
 ): Promise<void> => {
-  await updateDoc(doc(db, 'tasks', taskId), { completed: !completed });
+  await updateDoc(doc(db, 'tasks', taskId), {
+    completed: !completed,
+    completedAt: completed ? null : Timestamp.now(),
+  });
 };
 
 export const deleteTask = async (taskId: string): Promise<void> => {

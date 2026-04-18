@@ -7,6 +7,7 @@ import {
   toggleTaskCompletion as firestoreToggleTaskCompletion,
   deleteTask as firestoreDeleteTask,
 } from '@/lib/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { createCalendarEvent } from '@/app/actions/calendar';
 import { useUserSettings } from '@/hooks/useUserSettings';
 
@@ -142,7 +143,15 @@ export const useTasks = (userId: string | undefined) => {
     async (taskId: string, completed: boolean) => {
       // Optimistic
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, completed: !completed } : t))
+        prev.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                completed: !completed,
+                completedAt: completed ? null : Timestamp.now(),
+              }
+            : t,
+        )
       );
 
       // Debounce
