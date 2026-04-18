@@ -13,7 +13,7 @@ import SettingsPageClient from './settings/SettingsPageClient';
 import { SidebarSkeleton, MainContentSkeleton } from '@/components/shared/Skeletons';
 
 type View = 'dashboard' | 'settings';
-type DashboardLayout = "board" | "calendar";
+type DashboardLayout = "board" | "calendar" | "analytics";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -60,7 +60,11 @@ export default function DashboardPage() {
   // Detect mobile screen and set default collapse state
   useEffect(() => {
     const savedLayout = localStorage.getItem("taskflow.dashboard.layout");
-    if (savedLayout === "calendar" || savedLayout === "board") {
+    if (
+      savedLayout === "calendar" ||
+      savedLayout === "board" ||
+      savedLayout === "analytics"
+    ) {
       setDashboardLayout(savedLayout);
     }
 
