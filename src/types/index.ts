@@ -44,6 +44,9 @@ export interface Task {
   completed?: boolean;
   completedAt?: Timestamp | null;
   createdAt: Timestamp;
+  // Time fields
+  startTime?: string | null;            // HH:mm format, optional start time
+  endTime?: string | null;              // HH:mm format, optional end time (delivery time)
   // Enrichment fields
   description?: string | null;          // Free-text notes / description
   links?: string[];                     // Relevant URLs

@@ -53,12 +53,14 @@ export const useTasks = (userId: string | undefined) => {
       priorityName?: string,
       groupName?: string,
       typeId: string | null = null,
-      typeName?: string
+      typeName?: string,
+      startTime?: string,
+      endTime?: string
     ) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         const newTask = await firestoreCreateTask(
-          userId, title, priorityId, groupId, typeId, dueDate, sendEmailReminder, addToCalendar, description, links, checklistItems
+          userId, title, priorityId, groupId, typeId, dueDate, sendEmailReminder, addToCalendar, description, links, checklistItems, startTime, endTime
         );
         setTasks((prev) => [newTask, ...prev]);
 
@@ -83,7 +85,9 @@ export const useTasks = (userId: string | undefined) => {
               groupName,
               links,
               checklistItems,
-              typeName
+              typeName,
+              startTime,
+              endTime
             ).then(async (result) => {
               if (result.success && result.eventId) {
                 // Save the calendar event ID back to the task
@@ -131,12 +135,53 @@ export const useTasks = (userId: string | undefined) => {
       updateTimeoutRef.current[taskId] = setTimeout(async () => {
         try {
           await firestoreUpdateTask(taskId, data);
+
+          // ── Calendar sync for time updates ────
+          const currentTask = tasks.find(t => t.id === taskId);
+          const hasTimeChanges = data.startTime !== undefined || data.endTime !== undefined || data.dueDate !== undefined;
+          
+          if (
+            hasTimeChanges &&
+            currentTask?.calendarEventId &&
+            settings?.googleRefreshToken
+          ) {
+            const updatedTask = { ...currentTask, ...data };
+            
+            // If dueDate exists and calendar integration is active, update the event
+            if (updatedTask.dueDate) {
+              import('@/app/actions/calendar').then(({ updateCalendarEvent }) => {
+                const priorityName = currentTask ? `Priority: ${currentTask.priorityId}` : undefined;
+                const groupName = currentTask ? `Group: ${currentTask.groupId}` : undefined;
+                
+                updateCalendarEvent(
+                  {
+                    accessToken: settings.googleAccessToken,
+                    accessTokenExpiry: settings.googleTokenExpiry,
+                    refreshToken: settings.googleRefreshToken!,
+                  },
+                  currentTask.calendarEventId!,
+                  updatedTask.title,
+                  updatedTask.dueDate as string,
+                  updatedTask.description ?? undefined,
+                  priorityName,
+                  groupName,
+                  updatedTask.links,
+                  updatedTask.checklistItems,
+                  undefined,
+                  updatedTask.startTime || undefined,
+                  updatedTask.endTime || undefined
+                ).catch((err) => {
+                  console.error('[useTasks] Calendar update error:', err);
+                });
+              });
+            }
+          }
         } catch (err) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       }, 500);
     },
-    []
+    [tasks, settings]
   );
 
   const toggleTaskCompletion = useCallback(

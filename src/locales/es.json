@@ -25,6 +25,8 @@
   "task_title_label": "Título de la tarea",
   "task_title_placeholder": "¿Qué hay que hacer?",
   "due_date_label": "Fecha límite (Opcional)",
+  "start_time_label": "Hora de inicio (Opcional)",
+  "end_time_label": "Hora de entrega (Opcional)",
   "no_priorities_yet": "Aún no hay prioridades",
   "no_groups_yet": "Aún no hay grupos",
   "no_tasks_in_group": "No hay tareas en este grupo",

@@ -6,7 +6,7 @@ import { Priority, Group } from '@/types/index';
 interface CreateTaskFormProps {
   priorities: Priority[];
   groups: Group[];
-  onSubmit: (title: string, priorityId: string, groupId: string) => Promise<void>;
+  onSubmit: (title: string, priorityId: string, groupId: string, startTime?: string, endTime?: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -19,6 +19,8 @@ export default function CreateTaskForm({
   const [title, setTitle] = useState('');
   const [priorityId, setPriorityId] = useState(priorities[0]?.id || '');
   const [groupId, setGroupId] = useState(groups[0]?.id || '');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,10 +33,12 @@ export default function CreateTaskForm({
 
     setLoading(true);
     try {
-      await onSubmit(title, priorityId, groupId);
+      await onSubmit(title, priorityId, groupId, startTime || undefined, endTime || undefined);
       setTitle('');
       setPriorityId(priorities[0]?.id || '');
       setGroupId(groups[0]?.id || '');
+      setStartTime('');
+      setEndTime('');
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to create task');
@@ -84,6 +88,31 @@ export default function CreateTaskForm({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-1">
+            Start Time
+          </label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-1">
+            End Time
+          </label>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="w-full px-4 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
       </div>
 
       <div className="flex gap-3">

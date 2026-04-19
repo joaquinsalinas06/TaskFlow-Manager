@@ -6,6 +6,7 @@ import { Task, Priority, Group, TaskType, ChecklistItem, UserSettings } from '@/
 import { useTranslation } from '@/providers/I18nProvider';
 import CustomSelect from '@/components/shared/CustomSelect';
 import DatePicker from '@/components/shared/DatePicker';
+import TimePicker from '@/components/shared/TimePicker';
 import CreateTaskTypeModal from '@/components/task-type/CreateTaskTypeModal';
 import {
   X as XIcon,
@@ -58,6 +59,8 @@ export default function TaskDetailModal({
   const [groupId, setGroupId] = useState(task.groupId);
   const [typeId, setTypeId] = useState<string | null>(task.typeId ?? null);
   const [dueDate, setDueDate] = useState(task.dueDate ?? '');
+  const [startTime, setStartTime] = useState(task.startTime ?? '');
+  const [endTime, setEndTime] = useState(task.endTime ?? '');
   const [description, setDescription] = useState(task.description ?? '');
   const [links, setLinks] = useState<string[]>(task.links ?? []);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(task.checklistItems ?? []);
@@ -153,6 +156,8 @@ export default function TaskDetailModal({
         groupId,
         typeId,
         dueDate: dueDate || null,
+        startTime: startTime || null,
+        endTime: endTime || null,
         description: description.trim() || null,
         links,
         checklistItems,
@@ -387,6 +392,28 @@ export default function TaskDetailModal({
               weekStartsOn={userSettings?.weekStartsOn}
             />
           </div>
+
+          {/* Start Time and End Time - Only shown when due date is set */}
+          {dueDate && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div>
+                <label style={lbl}>{t('start_time_label')}</label>
+                <TimePicker
+                  value={startTime || null}
+                  onChange={(val) => setStartTime(val || '')}
+                  placeholder={t('start_time_label')}
+                />
+              </div>
+              <div>
+                <label style={lbl}>{t('end_time_label')}</label>
+                <TimePicker
+                  value={endTime || null}
+                  onChange={(val) => setEndTime(val || '')}
+                  placeholder={t('end_time_label')}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Notification toggles */}
           {dueDate && (
