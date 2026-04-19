@@ -379,7 +379,13 @@ export default function TaskCalendarView({
                               event.stopPropagation();
                               setSelectedTask(task);
                             }}
-                            title={t('task_detail_title')}
+                            title={
+                              task.startTime && task.endTime
+                                ? `${task.startTime} - ${task.endTime}`
+                                : task.endTime
+                                ? `Entrega: ${task.endTime}`
+                                : t('task_detail_title')
+                            }
                             style={{
                               flex: 1,
                               whiteSpace: 'nowrap',

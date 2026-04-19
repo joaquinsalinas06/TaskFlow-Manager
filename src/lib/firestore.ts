@@ -316,6 +316,8 @@ export const createTask = async (
   description: string | null = null,
   links: string[] = [],
   checklistItems: any[] = [],
+  startTime?: string,
+  endTime?: string,
 ): Promise<Task> => {
   const docRef = doc(collection(db, 'tasks'));
   
@@ -326,6 +328,8 @@ export const createTask = async (
     groupId,
     typeId,
     dueDate,
+    startTime: startTime || null,
+    endTime: endTime || null,
     completed: false,
     completedAt: null,
     createdAt: Timestamp.now(),

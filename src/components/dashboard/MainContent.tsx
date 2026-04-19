@@ -8,6 +8,7 @@ import TaskCalendarView from "@/components/dashboard/TaskCalendarView";
 import AnalyticsView from '@/components/analytics/AnalyticsView';
 import CustomSelect from "@/components/shared/CustomSelect";
 import DatePicker from "@/components/shared/DatePicker";
+import TimePicker from "@/components/shared/TimePicker";
 import CreateTaskTypeModal from "@/components/task-type/CreateTaskTypeModal";
 import {
   Plus,
@@ -50,6 +51,8 @@ interface MainContentProps {
     groupName?: string,
     typeId?: string | null,
     typeName?: string,
+    startTime?: string,
+    endTime?: string,
   ) => Promise<Task>;
   onCreateTaskType: (name: string) => Promise<TaskType>;
   onCreateGroup: (name: string) => Promise<Group>;
@@ -158,6 +161,8 @@ export default function MainContent({
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskStartTime, setTaskStartTime] = useState("");
+  const [taskEndTime, setTaskEndTime] = useState("");
   const [taskPriorityId, setTaskPriorityId] = useState(priorities[0]?.id || "");
   const [taskGroupId, setTaskGroupId] = useState(groups[0]?.id || "");
   const [taskTypeId, setTaskTypeId] = useState<string | null>(null);
@@ -193,6 +198,8 @@ export default function MainContent({
     setTaskGroupId(groups[0]?.id || "");
     setTaskTypeId(null);
     setTaskDueDate(presetDueDate);
+    setTaskStartTime("");
+    setTaskEndTime("");
     setTaskDescription("");
     setTaskLinks([]);
     setTaskChecklistItems([]);
@@ -232,6 +239,8 @@ export default function MainContent({
         _group?.name,
         taskTypeId,
         _type?.name,
+        taskStartTime || undefined,
+        taskEndTime || undefined,
       );
 
       setShowTaskModal(false);
@@ -870,6 +879,34 @@ export default function MainContent({
                     weekStartsOn={userSettings?.weekStartsOn}
                   />
                 </div>
+
+                {/* Start Time and End Time - Only shown when due date is set */}
+                {taskDueDate && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "0.75rem",
+                    }}
+                  >
+                    <div>
+                      <label style={lbl}>{t("start_time_label")}</label>
+                      <TimePicker
+                        value={taskStartTime || null}
+                        onChange={(val) => setTaskStartTime(val || "")}
+                        placeholder={t("start_time_label")}
+                      />
+                    </div>
+                    <div>
+                      <label style={lbl}>{t("end_time_label")}</label>
+                      <TimePicker
+                        value={taskEndTime || null}
+                        onChange={(val) => setTaskEndTime(val || "")}
+                        placeholder={t("end_time_label")}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Notification micro-toggles */}
                 {taskDueDate && (

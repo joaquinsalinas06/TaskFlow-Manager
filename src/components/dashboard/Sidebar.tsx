@@ -1069,7 +1069,6 @@ export default function Sidebar({
                     dashboardLayout !== "board"
                       ? "var(--color-surface-3)"
                       : "var(--color-surface-2)",
-                  border: "1px solid var(--color-border)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
